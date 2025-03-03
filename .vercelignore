@@ -1,0 +1,11 @@
+node_modules
+.git
+.gitignore
+.DS_Store
+README.md
+DEVELOPMENT.md
+STRUCTURE.md
+REQUIREMENTS.md
+docs
+.cursor
+tests 
