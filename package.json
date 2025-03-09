@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "install-frontend": "cd frontend && npm install",
-    "build": "cd frontend && npm run build",
+    "build": "echo \"Using build command from vercel.json\"",
     "start": "cd frontend && npm start",
-    "vercel-build": "cd frontend && npm install && npm run build"
+    "vercel-build": "echo \"Using build command from vercel.json\""
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.6.0",

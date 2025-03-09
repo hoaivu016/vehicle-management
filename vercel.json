@@ -1,7 +1,7 @@
 {
   "version": 2,
   "framework": "create-react-app",
-  "buildCommand": "cd frontend && npm install && npm run build",
+  "buildCommand": "chmod +x build.sh && ./build.sh",
   "outputDirectory": "frontend/build",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
