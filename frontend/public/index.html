@@ -11,7 +11,17 @@
     />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <script src="%PUBLIC_URL%/customIndex.js"></script>
     <title>Vehicle Management</title>
+    <!-- Xử lý lỗi 404 -->
+    <script>
+      // Fallback để xử lý lỗi 404
+      window.addEventListener('load', function() {
+        if (document.querySelector('title').textContent === '404: NOT_FOUND') {
+          window.location.href = '/';
+        }
+      });
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
