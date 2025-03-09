@@ -13,37 +13,25 @@ Hệ thống quản lý phương tiện toàn diện cho doanh nghiệp mua bán
 
 ## Triển khai lên Vercel
 
-### Bước 1: Đẩy mã nguồn lên GitHub
+Để triển khai ứng dụng này lên Vercel, bạn nên triển khai trực tiếp thư mục `frontend` này, không phải thư mục gốc của dự án.
 
-```bash
-git add .
-git commit -m "Chuẩn bị triển khai lên Vercel"
-git push origin main
-```
+### Cách triển khai đúng
 
-### Bước 2: Kết nối với Vercel
+1. Đăng nhập vào Vercel: https://vercel.com
+2. Tạo dự án mới
+3. Import repository từ GitHub
+4. **Quan trọng**: Trong cài đặt "Root Directory", chọn thư mục `frontend`
+5. Framework Preset: Chọn "Create React App"
+6. Build Command: Để trống (sẽ sử dụng mặc định: `npm run build`)
+7. Output Directory: Để trống (sẽ sử dụng mặc định: `build`)
+8. Bấm "Deploy"
 
-1. Đăng nhập vào [Vercel](https://vercel.com)
-2. Chọn "Import Project"
-3. Chọn repository từ GitHub
-4. Cấu hình triển khai:
-   - Framework Preset: Create React App
-   - Build Command: `npm run build`
-   - Output Directory: `build`
-   - Root Directory: `frontend` (nếu cấu trúc dự án của bạn là monorepo)
+## Biến môi trường
 
-### Bước 3: Cấu hình biến môi trường
+Đảm bảo thiết lập các biến môi trường sau trong Vercel:
 
-Thêm các biến môi trường sau vào cấu hình Vercel:
-
-```
-REACT_APP_SUPABASE_URL=https://your-project-id.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=your-anon-key
-```
-
-### Bước 4: Triển khai
-
-Nhấn nút "Deploy" và đợi quá trình triển khai hoàn tất.
+- `REACT_APP_SUPABASE_URL`: URL của Supabase project
+- `REACT_APP_SUPABASE_ANON_KEY`: Khóa Anonymous của Supabase
 
 ## Cấu hình Supabase cho đồng bộ dữ liệu
 
