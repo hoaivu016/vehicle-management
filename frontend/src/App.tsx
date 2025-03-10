@@ -16,6 +16,7 @@ import {
   Slide,
   Portal
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import VehicleList from './modules/vehicles/components/VehicleList';
 import VehicleForm from './modules/vehicles/components/VehicleForm';
 import StatusChangeModal from './modules/vehicles/components/StatusChangeModal';
@@ -83,6 +84,7 @@ function TabPanel(props: TabPanelProps) {
 
 function App() {
   // Thêm hỗ trợ xác định thiết bị di động
+  const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // State kiểm tra kết nối Supabase
