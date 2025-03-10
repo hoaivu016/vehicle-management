@@ -35,6 +35,7 @@ export interface Staff {
   joinDate: string | Date;
   leaveDate?: string | Date;
   salary?: number;
+  commissionRate?: number;
   address?: string;
   notes?: string;
   vehiclesSold?: number;
@@ -52,4 +53,26 @@ export interface StaffStatistics {
   managementTeam: number;
   supportTeam: number;
   technicalTeam: number;
-} 
+}
+
+/**
+ * Tính toán tổng hoa hồng cho nhân viên
+ * @param vehiclesSold - Số lượng xe đã bán
+ * @param commissionRate - Tỷ lệ hoa hồng (%)
+ * @returns Tổng số tiền hoa hồng
+ */
+export const calculateTotalCommission = (vehiclesSold: number = 0, commissionRate: number = 0): number => {
+  // Giả sử giá trị trung bình của mỗi xe là 500 triệu đồng
+  const averageVehicleValue = 500000000;
+  
+  // Tính tổng hoa hồng: số xe * giá trị trung bình * tỷ lệ hoa hồng
+  return vehiclesSold * averageVehicleValue * (commissionRate / 100);
+};
+
+/**
+ * Tạo ID ngẫu nhiên cho nhân viên
+ * @returns ID cho nhân viên mới
+ */
+export const generateStaffId = (): string => {
+  return 'staff_' + Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
+}; 
