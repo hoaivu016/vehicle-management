@@ -16,8 +16,6 @@ import {
   Slide,
   Portal
 } from '@mui/material';
-import { ThemeProvider } from '@mui/material/styles';
-import theme from './theme';
 import VehicleList from './modules/vehicles/components/VehicleList';
 import VehicleForm from './modules/vehicles/components/VehicleForm';
 import StatusChangeModal from './modules/vehicles/components/StatusChangeModal';
@@ -933,217 +931,214 @@ function App() {
   };
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        minHeight: '100vh',
-        overflow: 'hidden'
-      }}>
-        <Container maxWidth={false} disableGutters sx={{ px: 2, pb: isMobile ? 7 : 2 }}>
-          <Box sx={{ my: 4 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h3" component="h1" gutterBottom align="left" sx={{ 
-                mb: 0,
-                fontSize: isMobile ? '1.75rem' : '2.5rem'
-              }}>
-                Quản Lý Kho Xe
-              </Typography>
-              {isOnline ? (
-                <Chip 
-                  label={isSyncing ? 'Đang đồng bộ...' : 'Đã kết nối'} 
-                  color={isSyncing ? 'warning' : 'success'} 
-                  size="small" 
-                  onClick={synchronizeData}
-                  sx={{ cursor: 'pointer' }}
-                />
-              ) : (
-                <Chip 
-                  label="Offline" 
-                  color="error" 
-                  size="small" 
-                />
-              )}
-            </Box>
-
-            {!isMobile && (
-              <Paper sx={{ borderRadius: 1, boxShadow: 1, mb: 4 }}>
-                <AppBar position="static" color="default" elevation={0} sx={{ borderTopLeftRadius: 1, borderTopRightRadius: 1 }}>
-                  <Tabs 
-                    value={currentTab} 
-                    onChange={handleTabChange}
-                    indicatorColor="primary"
-                    textColor="primary"
-                    variant="fullWidth"
-                  >
-                    <Tab label="Báo Cáo" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }} />
-                    <Tab label="Danh Sách Xe" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }} />
-                    <Tab label="ADMIN" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }} />
-                  </Tabs>
-                </AppBar>
-              </Paper>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      minHeight: '100vh',
+      overflow: 'hidden'
+    }}>
+      <Container maxWidth={false} disableGutters sx={{ px: 2, pb: isMobile ? 7 : 2 }}>
+        <Box sx={{ my: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h3" component="h1" gutterBottom align="left" sx={{ 
+              mb: 0,
+              fontSize: isMobile ? '1.75rem' : '2.5rem'
+            }}>
+              Quản Lý Kho Xe
+            </Typography>
+            {isOnline ? (
+              <Chip 
+                label={isSyncing ? 'Đang đồng bộ...' : 'Đã kết nối'} 
+                color={isSyncing ? 'warning' : 'success'} 
+                size="small" 
+                onClick={synchronizeData}
+                sx={{ cursor: 'pointer' }}
+              />
+            ) : (
+              <Chip 
+                label="Offline" 
+                color="error" 
+                size="small" 
+              />
             )}
-
-            {/* Hiển thị tab báo cáo */}
-            <TabPanel value={currentTab} index={0}>
-              <Report 
-                vehicles={vehicles} 
-                selectedMonth={globalMonth}
-                selectedYear={globalYear}
-                onDateChange={handleGlobalDateChange}
-                staffList={staffList}
-                kpiList={kpiList}
-              />
-            </TabPanel>
-
-            {/* Hiển thị tab danh sách xe */}
-            <TabPanel value={currentTab} index={1}>
-              <VehicleList 
-                vehicles={vehicles} 
-                onEdit={handleOpenEditVehicleForm}
-                onDelete={handleDeleteVehicle}
-                onStatusChange={handleStatusChange}
-                onAddCost={handleAddCost}
-                onAddVehicle={handleOpenAddVehicleForm}
-                selectedMonth={globalMonth}
-                selectedYear={globalYear}
-                onDateChange={handleGlobalDateChange}
-              />
-              {isVehicleFormOpen && (
-                <VehicleForm 
-                  open={isVehicleFormOpen}
-                  onClose={() => {
-                    setIsVehicleFormOpen(false);
-                    setEditingVehicle(undefined);
-                    setHasUnsavedChanges(false);
-                  }}
-                  onSubmit={editingVehicle ? handleEditVehicle : handleAddVehicle}
-                  initialData={editingVehicle}
-                  staffList={staffList}
-                  onFormChange={(hasChanges) => setHasUnsavedChanges(hasChanges)}
-                />
-              )}
-              {isStatusChangeModalOpen && selectedVehicleForStatusChange && (
-                <StatusChangeModal 
-                  open={isStatusChangeModalOpen}
-                  vehicle={selectedVehicleForStatusChange}
-                  onClose={() => setIsStatusChangeModalOpen(false)}
-                  onStatusChange={handleStatusChangeConfirm}
-                  staffList={staffList}
-                />
-              )}
-            </TabPanel>
-
-            {/* Hiển thị tab ADMIN */}
-            <TabPanel value={currentTab} index={2}>
-              <Admin 
-                staffList={staffList}
-                vehicles={vehicles}
-                onAddStaff={handleAddStaff}
-                onEditStaff={handleEditStaff}
-                onDeleteStaff={handleDeleteStaff}
-                kpiList={kpiList}
-                onSaveKpi={handleSaveKpi}
-                supportBonusList={supportBonusList}
-                onSaveSupportBonus={handleSaveSupportBonus}
-                selectedMonth={globalMonth}
-                selectedYear={globalYear}
-                onDateChange={handleGlobalDateChange}
-              />
-            </TabPanel>
           </Box>
-        </Container>
-        
-        {/* Bottom Navigation cho thiết bị di động */}
-        {isMobile && (
-          <Paper sx={{ 
-            position: 'fixed', 
-            bottom: 0, 
-            left: 0, 
-            right: 0, 
-            zIndex: 1100,
-            borderTopLeftRadius: 16,
-            borderTopRightRadius: 16,
-            overflow: 'hidden',
-            boxShadow: '0px -2px 10px rgba(0,0,0,0.1)'
-          }} elevation={3}>
-            <BottomNavigation
-              value={currentTab}
-              onChange={(_event, newValue) => {
-                setCurrentTab(newValue);
-              }}
-              showLabels
+
+          {!isMobile && (
+            <Paper sx={{ borderRadius: 1, boxShadow: 1, mb: 4 }}>
+              <AppBar position="static" color="default" elevation={0} sx={{ borderTopLeftRadius: 1, borderTopRightRadius: 1 }}>
+                <Tabs 
+                  value={currentTab} 
+                  onChange={handleTabChange}
+                  indicatorColor="primary"
+                  textColor="primary"
+                  variant="fullWidth"
+                >
+                  <Tab label="Báo Cáo" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }} />
+                  <Tab label="Danh Sách Xe" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }} />
+                  <Tab label="ADMIN" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }} />
+                </Tabs>
+              </AppBar>
+            </Paper>
+          )}
+
+          {/* Hiển thị tab báo cáo */}
+          <TabPanel value={currentTab} index={0}>
+            <Report 
+              vehicles={vehicles} 
+              selectedMonth={globalMonth}
+              selectedYear={globalYear}
+              onDateChange={handleGlobalDateChange}
+              staffList={staffList}
+              kpiList={kpiList}
+            />
+          </TabPanel>
+
+          {/* Hiển thị tab danh sách xe */}
+          <TabPanel value={currentTab} index={1}>
+            <VehicleList 
+              vehicles={vehicles} 
+              onEdit={handleOpenEditVehicleForm}
+              onDelete={handleDeleteVehicle}
+              onStatusChange={handleStatusChange}
+              onAddCost={handleAddCost}
+              onAddVehicle={handleOpenAddVehicleForm}
+              selectedMonth={globalMonth}
+              selectedYear={globalYear}
+              onDateChange={handleGlobalDateChange}
+            />
+            {isVehicleFormOpen && (
+              <VehicleForm 
+                open={isVehicleFormOpen}
+                onClose={() => {
+                  setIsVehicleFormOpen(false);
+                  setEditingVehicle(undefined);
+                  setHasUnsavedChanges(false);
+                }}
+                onSubmit={editingVehicle ? handleEditVehicle : handleAddVehicle}
+                initialData={editingVehicle}
+                staffList={staffList}
+                onFormChange={(hasChanges) => setHasUnsavedChanges(hasChanges)}
+              />
+            )}
+            {isStatusChangeModalOpen && selectedVehicleForStatusChange && (
+              <StatusChangeModal 
+                open={isStatusChangeModalOpen}
+                vehicle={selectedVehicleForStatusChange}
+                onClose={() => setIsStatusChangeModalOpen(false)}
+                onStatusChange={handleStatusChangeConfirm}
+                staffList={staffList}
+              />
+            )}
+          </TabPanel>
+
+          {/* Hiển thị tab ADMIN */}
+          <TabPanel value={currentTab} index={2}>
+            <Admin 
+              staffList={staffList}
+              vehicles={vehicles}
+              onAddStaff={handleAddStaff}
+              onEditStaff={handleEditStaff}
+              onDeleteStaff={handleDeleteStaff}
+              kpiList={kpiList}
+              onSaveKpi={handleSaveKpi}
+              supportBonusList={supportBonusList}
+              onSaveSupportBonus={handleSaveSupportBonus}
+              selectedMonth={globalMonth}
+              selectedYear={globalYear}
+              onDateChange={handleGlobalDateChange}
+            />
+          </TabPanel>
+        </Box>
+      </Container>
+      
+      {/* Bottom Navigation cho thiết bị di động */}
+      {isMobile && (
+        <Paper sx={{ 
+          position: 'fixed', 
+          bottom: 0, 
+          left: 0, 
+          right: 0, 
+          zIndex: 1100,
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+          overflow: 'hidden',
+          boxShadow: '0px -2px 10px rgba(0,0,0,0.1)'
+        }} elevation={3}>
+          <BottomNavigation
+            value={currentTab}
+            onChange={(_event, newValue) => {
+              setCurrentTab(newValue);
+            }}
+            showLabels
+            sx={{ 
+              height: 65,
+              '& .MuiBottomNavigationAction-root': {
+                py: 1
+              }
+            }}
+          >
+            <BottomNavigationAction 
+              label="Báo Cáo" 
+              icon={<DashboardIcon />} 
               sx={{ 
-                height: 65,
-                '& .MuiBottomNavigationAction-root': {
-                  py: 1
+                color: currentTab === 0 ? 'primary.main' : 'text.secondary',
+                '&.Mui-selected': {
+                  color: 'primary.main'
                 }
               }}
-            >
-              <BottomNavigationAction 
-                label="Báo Cáo" 
-                icon={<DashboardIcon />} 
-                sx={{ 
-                  color: currentTab === 0 ? 'primary.main' : 'text.secondary',
-                  '&.Mui-selected': {
-                    color: 'primary.main'
-                  }
-                }}
-              />
-              <BottomNavigationAction 
-                label="Danh Sách Xe" 
-                icon={<DirectionsCarIcon />} 
-                sx={{ 
-                  color: currentTab === 1 ? 'primary.main' : 'text.secondary',
-                  '&.Mui-selected': {
-                    color: 'primary.main'
-                  }
-                }}
-              />
-              <BottomNavigationAction 
-                label="Admin" 
-                icon={<AdminPanelSettingsIcon />} 
-                sx={{ 
-                  color: currentTab === 2 ? 'primary.main' : 'text.secondary',
-                  '&.Mui-selected': {
-                    color: 'primary.main'
-                  }
-                }}
-              />
-            </BottomNavigation>
-          </Paper>
-        )}
-        
-        {/* Thông báo đồng bộ hóa */}
-        <Portal>
-          <Slide direction="up" in={showSyncMessage}>
-            <Box
-              sx={{
-                position: 'fixed',
-                bottom: isMobile ? 80 : 24,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 9999,
-                maxWidth: 500,
-                width: 'calc(100% - 32px)',
-                boxShadow: 3,
-                borderRadius: 1
+            />
+            <BottomNavigationAction 
+              label="Danh Sách Xe" 
+              icon={<DirectionsCarIcon />} 
+              sx={{ 
+                color: currentTab === 1 ? 'primary.main' : 'text.secondary',
+                '&.Mui-selected': {
+                  color: 'primary.main'
+                }
               }}
+            />
+            <BottomNavigationAction 
+              label="Admin" 
+              icon={<AdminPanelSettingsIcon />} 
+              sx={{ 
+                color: currentTab === 2 ? 'primary.main' : 'text.secondary',
+                '&.Mui-selected': {
+                  color: 'primary.main'
+                }
+              }}
+            />
+          </BottomNavigation>
+        </Paper>
+      )}
+      
+      {/* Thông báo đồng bộ hóa */}
+      <Portal>
+        <Slide direction="up" in={showSyncMessage}>
+          <Box
+            sx={{
+              position: 'fixed',
+              bottom: isMobile ? 80 : 24,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 9999,
+              maxWidth: 500,
+              width: 'calc(100% - 32px)',
+              boxShadow: 3,
+              borderRadius: 1
+            }}
+          >
+            <Alert 
+              onClose={() => setShowSyncMessage(false)} 
+              severity={syncMessage.type}
+              variant="filled"
+              sx={{ width: '100%' }}
             >
-              <Alert 
-                onClose={() => setShowSyncMessage(false)} 
-                severity={syncMessage.type}
-                variant="filled"
-                sx={{ width: '100%' }}
-              >
-                {syncMessage.message}
-              </Alert>
-            </Box>
-          </Slide>
-        </Portal>
-      </Box>
-    </ThemeProvider>
+              {syncMessage.message}
+            </Alert>
+          </Box>
+        </Slide>
+      </Portal>
+    </Box>
   );
 }
 
