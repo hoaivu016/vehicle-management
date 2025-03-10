@@ -1,0 +1,3 @@
+Trigger build: 2
+
+Cấu hình TypeScript đã được thay đổi để bỏ qua lỗi. 
