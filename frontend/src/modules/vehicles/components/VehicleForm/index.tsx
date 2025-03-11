@@ -44,7 +44,7 @@ interface VehicleFormProps {
 
 // Interface cho TabPanel
 interface TabPanelProps {
-  children?: React.ReactNode;
+  children?: any;
   index: number;
   value: number;
 }
@@ -112,26 +112,26 @@ const _unusedSaleStaff: SaleStaff = {
   expectedCommission: 0
 };
 
-const VehicleForm: React.FC<VehicleFormProps> = ({ 
+const VehicleForm = ({ 
   open, 
   onClose, 
   onSubmit,
   initialData,
   staffList = [],
   onFormChange
-}) => {
+}: VehicleFormProps) => {
   // State để quản lý tab
   const [tabValue, setTabValue] = useState(0);
   
   // State cho quản lý chi phí
-  const [costs, setCosts] = useState<CostInfo[]>(initialData?.costs || []);
+  const [costs, setCosts] = useState(initialData?.costs || []);
   const [newCost, setNewCost] = useState({
     amount: '',
     description: ''
   });
   
   // State cho quản lý thanh toán
-  const [payments, setPayments] = useState<PaymentInfo[]>(initialData?.payments || []);
+  const [payments, setPayments] = useState(initialData?.payments || []);
   const [newPayment, setNewPayment] = useState({
     amount: '',
     type: 'DEPOSIT' as PaymentInfo['type'],
@@ -139,7 +139,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
   });
   
   // State cho nhân viên bán hàng
-  const [saleStaff, setSaleStaff] = useState<SaleStaff>(initialData?.saleStaff || {
+  const [saleStaff, setSaleStaff] = useState(initialData?.saleStaff || {
     id: '',
     name: '',
     team: '',
@@ -149,16 +149,8 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
   // Lọc ra nhân viên đang hoạt động
   const activeStaff = staffList.filter(staff => staff.status === StaffStatus.ACTIVE);
   
-  // State cho trạng thái nhập liệu
-  const [isEditingOdo, setIsEditingOdo] = useState(false);
-  const [rawOdoValue, setRawOdoValue] = useState('');
-  const [isEditingPurchasePrice, setIsEditingPurchasePrice] = useState(false);
-  const [rawPurchasePriceValue, setRawPurchasePriceValue] = useState('');
-  const [isEditingSalePrice, setIsEditingSalePrice] = useState(false);
-  const [rawSalePriceValue, setRawSalePriceValue] = useState('');
-  
   // Xử lý thay đổi tab
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (event: any, newValue: number) => {
     setTabValue(newValue);
   };
   
@@ -377,22 +369,10 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
                   name="odo"
                   label="Số Km Đã Đi"
                   type="text"
-                  value={isEditingOdo ? rawOdoValue : formatNumber(formik.values.odo)}
+                  value={formatNumber(formik.values.odo)}
                   onChange={(e) => {
-                    // Chỉ cho phép nhập số
-                    const rawValue = e.target.value.replace(/[^\d]/g, '');
-                    setRawOdoValue(rawValue);
-                    
-                    // Cập nhật giá trị formik
-                    const numericValue = parseInt(rawValue, 10) || 0;
-                    formik.setFieldValue('odo', numericValue);
-                  }}
-                  onFocus={() => {
-                    setIsEditingOdo(true);
-                    setRawOdoValue(formik.values.odo ? formik.values.odo.toString() : '');
-                  }}
-                  onBlur={() => {
-                    setIsEditingOdo(false);
+                    const value = parseFormattedNumber(e.target.value);
+                    formik.setFieldValue('odo', value);
                   }}
                   error={formik.touched.odo && Boolean(formik.errors.odo)}
                   helperText={formik.touched.odo && formik.errors.odo}
@@ -412,22 +392,10 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
                   name="purchasePrice"
                   label="Giá Mua (VNĐ)"
                   type="text"
-                  value={isEditingPurchasePrice ? rawPurchasePriceValue : formatNumber(formik.values.purchasePrice)}
+                  value={formatNumber(formik.values.purchasePrice)}
                   onChange={(e) => {
-                    // Chỉ cho phép nhập số
-                    const rawValue = e.target.value.replace(/[^\d]/g, '');
-                    setRawPurchasePriceValue(rawValue);
-                    
-                    // Cập nhật giá trị formik
-                    const numericValue = parseInt(rawValue, 10) || 0;
-                    formik.setFieldValue('purchasePrice', numericValue);
-                  }}
-                  onFocus={() => {
-                    setIsEditingPurchasePrice(true);
-                    setRawPurchasePriceValue(formik.values.purchasePrice ? formik.values.purchasePrice.toString() : '');
-                  }}
-                  onBlur={() => {
-                    setIsEditingPurchasePrice(false);
+                    const value = parseFormattedNumber(e.target.value);
+                    formik.setFieldValue('purchasePrice', value);
                   }}
                   error={formik.touched.purchasePrice && Boolean(formik.errors.purchasePrice)}
                   helperText={formik.touched.purchasePrice && formik.errors.purchasePrice}
@@ -447,22 +415,10 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
                   name="salePrice"
                   label="Giá Bán (VNĐ)"
                   type="text"
-                  value={isEditingSalePrice ? rawSalePriceValue : formatNumber(formik.values.salePrice)}
+                  value={formatNumber(formik.values.salePrice)}
                   onChange={(e) => {
-                    // Chỉ cho phép nhập số
-                    const rawValue = e.target.value.replace(/[^\d]/g, '');
-                    setRawSalePriceValue(rawValue);
-                    
-                    // Cập nhật giá trị formik
-                    const numericValue = parseInt(rawValue, 10) || 0;
-                    formik.setFieldValue('salePrice', numericValue);
-                  }}
-                  onFocus={() => {
-                    setIsEditingSalePrice(true);
-                    setRawSalePriceValue(formik.values.salePrice ? formik.values.salePrice.toString() : '');
-                  }}
-                  onBlur={() => {
-                    setIsEditingSalePrice(false);
+                    const value = parseFormattedNumber(e.target.value);
+                    formik.setFieldValue('salePrice', value);
                   }}
                   error={formik.touched.salePrice && Boolean(formik.errors.salePrice)}
                   helperText={formik.touched.salePrice && formik.errors.salePrice}
