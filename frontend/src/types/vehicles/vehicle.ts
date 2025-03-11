@@ -255,8 +255,14 @@ export function getStatusBorderColor(status: VehicleStatus): string {
 // Hàm tính toán công nợ
 export function calculateDebt(
   salePrice: number, 
-  payments: PaymentInfo[]
+  payments: PaymentInfo[] | undefined
 ): number {
+  // Kiểm tra nếu payments không tồn tại hoặc không phải là mảng
+  if (!payments || !Array.isArray(payments)) {
+    console.warn('Không tìm thấy danh sách thanh toán. Sử dụng mảng rỗng.');
+    return salePrice; // Trả về salePrice làm công nợ nếu không có thanh toán
+  }
+  
   // Tính tổng các khoản thanh toán
   const depositAmount = payments
     .filter(p => p.type === 'DEPOSIT')
