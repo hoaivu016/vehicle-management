@@ -446,6 +446,21 @@ function App() {
 
   // Hàm cập nhật tính toán cho xe
   const updateVehicleCalculations = (vehicle: Vehicle): Vehicle => {
+    // Kiểm tra xe có hợp lệ không
+    if (!vehicle) {
+      console.error('updateVehicleCalculations: vehicle là undefined');
+      return vehicle;
+    }
+
+    // Đảm bảo vehicle.payments tồn tại
+    if (!vehicle.payments) {
+      console.warn('updateVehicleCalculations: vehicle.payments là undefined, tạo mảng rỗng');
+      vehicle = {
+        ...vehicle,
+        payments: []
+      };
+    }
+    
     // Tính thời gian lưu kho
     const storageTime = calculateStorageTime(
       vehicle.importDate,

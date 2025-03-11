@@ -63,16 +63,6 @@ export interface Vehicle {
   note: string;
   sellingPrice?: number;
   importPrice?: number;
-  imageUrl?: string; // Đường dẫn hình ảnh
-  selectedImage?: string; // Hình ảnh đã chọn (có thể là base64 hoặc đường dẫn)
-}
-
-// Thêm interface FormVehicle để sử dụng trong các form
-export interface FormVehicle extends Omit<Vehicle, 'id' | 'statusHistory' | 'storageTime' | 'cost' | 'debt' | 'profit' | 'saleStaff' | 'costs' | 'payments'> {
-  id?: string;
-  imageUrl?: string;
-  selectedImage?: string;
-  saleStaffId?: string;
 }
 
 // Hàm tạo mã xe tự động
@@ -257,10 +247,10 @@ export function calculateDebt(
   salePrice: number, 
   payments: PaymentInfo[] | undefined
 ): number {
-  // Kiểm tra nếu payments không tồn tại hoặc không phải là mảng
-  if (!payments || !Array.isArray(payments)) {
-    console.warn('Không tìm thấy danh sách thanh toán. Sử dụng mảng rỗng.');
-    return salePrice; // Trả về salePrice làm công nợ nếu không có thanh toán
+  // Kiểm tra nếu payments là undefined thì gán mảng rỗng
+  if (!payments) {
+    console.warn('calculateDebt: payments là undefined, sử dụng mảng rỗng');
+    payments = [];
   }
   
   // Tính tổng các khoản thanh toán
@@ -307,6 +297,12 @@ export function calculateDebtOnStatusChange(
   newStatus: VehicleStatus,
   paymentAmount: number = 0
 ): number {
+  // Kiểm tra xe có hợp lệ không
+  if (!vehicle) {
+    console.error('calculateDebtOnStatusChange: vehicle là undefined');
+    return 0;
+  }
+
   // Nếu về trạng thái Trong kho, reset công nợ về 0 và xóa toàn bộ thanh toán
   if (newStatus === VehicleStatus.IN_STOCK) {
     console.log('Reset công nợ về 0 và xóa toàn bộ thanh toán khi chuyển về trạng thái Trong kho');
@@ -320,6 +316,15 @@ export function calculateDebtOnStatusChange(
   if (newStatus === VehicleStatus.SOLD) {
     console.log('Reset công nợ về 0 khi chuyển sang trạng thái Đã bán');
     return 0;
+  }
+  
+  // Kiểm tra payments có tồn tại không
+  if (!vehicle.payments) {
+    console.warn('calculateDebtOnStatusChange: vehicle.payments là undefined, sử dụng mảng rỗng');
+    vehicle = {
+      ...vehicle,
+      payments: []
+    };
   }
   
   // Tạo bản sao của mảng thanh toán để không ảnh hưởng đến dữ liệu gốc
