@@ -23,10 +23,7 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel,
-  InputAdornment,
-  FormHelperText,
-  CircularProgress
+  InputLabel
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -35,8 +32,6 @@ import { Staff, StaffStatus } from '../../../../types/staff/staff';
 import * as Yup from 'yup';
 import { useFormik } from 'formik';
 import { formatNumber, parseFormattedNumber, formatCurrency, formatDate } from '../../../../utils/formatters';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import CloseIcon from '@mui/icons-material/Close';
 
 interface VehicleFormProps {
   open: boolean;
@@ -241,10 +236,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
           ? initialData.exportDate.toISOString().split('T')[0] 
           : initialData.exportDate) 
         : '',
-      note: initialData?.note || '',
-      status: initialData?.status || VehicleStatus.IN_STOCK,
-      imageUrl: initialData?.imageUrl || '',
-      selectedImage: initialData?.selectedImage || ''
+      note: initialData?.note || ''
     },
     validationSchema: validationSchema,
     onSubmit: (values) => {
@@ -257,7 +249,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
         odo: parseFormattedNumber(values.odo.toString()),
         purchasePrice: parseFormattedNumber(values.purchasePrice.toString()),
         salePrice: parseFormattedNumber(values.salePrice.toString()),
-        status: values.status,
+        status: initialData?.status || VehicleStatus.IN_STOCK,
         importDate: new Date(values.importDate),
         exportDate: values.exportDate ? new Date(values.exportDate) : undefined,
         costs: costs,
@@ -306,18 +298,19 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
   return (
     <Dialog 
       open={open} 
-      onClose={(event, _reason) => {
+      onClose={(event, reason) => {
         if (formik.dirty || costs.length > 0 || payments.length > 0) {
           const confirm = window.confirm('Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn đóng không?');
           if (!confirm) return;
         }
+        if (onFormChange) onFormChange(false);
         onClose();
-      }}
-      maxWidth="md"
+      }} 
+      maxWidth="md" 
       fullWidth
     >
       <DialogTitle>
-        {initialData ? 'Cập nhật thông tin xe' : 'Thêm xe mới'}
+        {initialData ? 'Sửa Thông Tin Xe' : 'Thêm Xe Mới'}
       </DialogTitle>
       <DialogContent>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
@@ -386,7 +379,8 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
                   InputProps={{
                     inputProps: { 
                       min: 0,
-                      style: { textAlign: 'right' }
+                      style: { textAlign: 'right' },
+                      maxLength: 15
                     }
                   }}
                 />
@@ -408,7 +402,8 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
                   InputProps={{
                     inputProps: { 
                       min: 0,
-                      style: { textAlign: 'right' }
+                      style: { textAlign: 'right' },
+                      maxLength: 15
                     }
                   }}
                 />
@@ -430,7 +425,8 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
                   InputProps={{
                     inputProps: { 
                       min: 0,
-                      style: { textAlign: 'right' }
+                      style: { textAlign: 'right' },
+                      maxLength: 15
                     }
                   }}
                 />
@@ -562,7 +558,8 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
                       size="small"
                       InputProps={{
                         inputProps: { 
-                          style: { textAlign: 'right' }
+                          style: { textAlign: 'right' },
+                          maxLength: 15
                         }
                       }}
                     />
@@ -733,7 +730,8 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
                       size="small"
                       InputProps={{
                         inputProps: { 
-                          style: { textAlign: 'right' }
+                          style: { textAlign: 'right' },
+                          maxLength: 15
                         }
                       }}
                     />
@@ -813,7 +811,8 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
                 InputProps={{
                   inputProps: { 
                     min: 0,
-                    style: { textAlign: 'right' }
+                    style: { textAlign: 'right' },
+                    maxLength: 15
                   }
                 }}
               />
@@ -864,17 +863,15 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
         </TabPanel>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Hủy</Button>
+        <Button onClick={onClose} color="secondary">
+          Hủy
+        </Button>
         <Button 
           onClick={() => formik.handleSubmit()} 
-          variant="contained" 
-          color="primary"
-          disabled={formik.isSubmitting}
+          color="primary" 
+          variant="contained"
         >
-          {formik.isSubmitting ? 
-            <CircularProgress size={24} /> : 
-            initialData ? 'Cập nhật' : 'Thêm mới'
-          }
+          {initialData ? 'Cập Nhật' : 'Thêm Xe'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -48,6 +48,11 @@ export const parseFormattedNumber = (formattedValue: string): number => {
   // Loại bỏ tất cả ký tự không phải số, ngoại trừ dấu thập phân
   const numericValue = formattedValue.replace(/[^\d.-]/g, '');
   
+  // Xử lý chuỗi số lớn
+  if (numericValue.length > 15) {
+    console.warn('Số quá lớn, có thể gây mất độ chính xác:', numericValue);
+  }
+  
   // Chuyển đổi thành số
   return parseFloat(numericValue) || 0;
 };
