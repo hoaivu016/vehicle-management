@@ -46,8 +46,8 @@ export const parseFormattedNumber = (formattedValue: string): number => {
   if (!formattedValue) return 0;
   
   try {
-    // Loại bỏ tất cả ký tự không phải số
-    const numericValue = formattedValue.replace(/[^\d]/g, '');
+    // Loại bỏ tất cả ký tự không phải số (sử dụng \D để loại bỏ tất cả ký tự không phải số)
+    const numericValue = formattedValue.replace(/\D/g, '');
     
     // Xử lý chuỗi số lớn
     if (numericValue.length > 15) {

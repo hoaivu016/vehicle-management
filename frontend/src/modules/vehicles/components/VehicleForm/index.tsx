@@ -370,15 +370,36 @@ const VehicleForm = ({
                   label="Số Km Đã Đi"
                   type="text"
                   value={formatNumber(formik.values.odo)}
-                  onChange={(e) => {
-                    const value = parseFormattedNumber(e.target.value);
-                    formik.setFieldValue('odo', value);
+                  onInput={(e: any) => {
+                    // Lấy phần tử input
+                    const input = e.currentTarget;
+                    
+                    // Lưu vị trí con trỏ hiện tại
+                    const cursorPos = input.selectionStart;
+                    
+                    // Xóa tất cả các dấu phân cách hàng nghìn
+                    const rawValue = input.value.replace(/\./g, '');
+                    
+                    // Cập nhật giá trị
+                    const numericValue = parseInt(rawValue, 10) || 0;
+                    formik.setFieldValue('odo', numericValue);
+                    
+                    // Đặt lại vị trí con trỏ sau khi render (trong setTimeout)
+                    setTimeout(() => {
+                      // Tính toán vị trí con trỏ mới dựa trên số lượng dấu phân cách
+                      const formattedValue = formatNumber(numericValue);
+                      const addedSeparators = formattedValue.split('.').length - 1;
+                      const originalSeparators = input.value.substring(0, cursorPos).split('.').length - 1;
+                      const newCursorPos = cursorPos + (addedSeparators - originalSeparators);
+                      
+                      input.setSelectionRange(newCursorPos, newCursorPos);
+                    }, 0);
                   }}
                   error={formik.touched.odo && Boolean(formik.errors.odo)}
                   helperText={formik.touched.odo && formik.errors.odo}
                   InputProps={{
                     inputProps: { 
-                      min: 0,
+                      inputMode: 'numeric',
                       style: { textAlign: 'right' },
                       maxLength: 15
                     }
@@ -393,15 +414,36 @@ const VehicleForm = ({
                   label="Giá Mua (VNĐ)"
                   type="text"
                   value={formatNumber(formik.values.purchasePrice)}
-                  onChange={(e) => {
-                    const value = parseFormattedNumber(e.target.value);
-                    formik.setFieldValue('purchasePrice', value);
+                  onInput={(e: any) => {
+                    // Lấy phần tử input
+                    const input = e.currentTarget;
+                    
+                    // Lưu vị trí con trỏ hiện tại
+                    const cursorPos = input.selectionStart;
+                    
+                    // Xóa tất cả các dấu phân cách hàng nghìn
+                    const rawValue = input.value.replace(/\./g, '');
+                    
+                    // Cập nhật giá trị
+                    const numericValue = parseInt(rawValue, 10) || 0;
+                    formik.setFieldValue('purchasePrice', numericValue);
+                    
+                    // Đặt lại vị trí con trỏ sau khi render (trong setTimeout)
+                    setTimeout(() => {
+                      // Tính toán vị trí con trỏ mới dựa trên số lượng dấu phân cách
+                      const formattedValue = formatNumber(numericValue);
+                      const addedSeparators = formattedValue.split('.').length - 1;
+                      const originalSeparators = input.value.substring(0, cursorPos).split('.').length - 1;
+                      const newCursorPos = cursorPos + (addedSeparators - originalSeparators);
+                      
+                      input.setSelectionRange(newCursorPos, newCursorPos);
+                    }, 0);
                   }}
                   error={formik.touched.purchasePrice && Boolean(formik.errors.purchasePrice)}
                   helperText={formik.touched.purchasePrice && formik.errors.purchasePrice}
                   InputProps={{
                     inputProps: { 
-                      min: 0,
+                      inputMode: 'numeric',
                       style: { textAlign: 'right' },
                       maxLength: 15
                     }
@@ -416,15 +458,36 @@ const VehicleForm = ({
                   label="Giá Bán (VNĐ)"
                   type="text"
                   value={formatNumber(formik.values.salePrice)}
-                  onChange={(e) => {
-                    const value = parseFormattedNumber(e.target.value);
-                    formik.setFieldValue('salePrice', value);
+                  onInput={(e: any) => {
+                    // Lấy phần tử input
+                    const input = e.currentTarget;
+                    
+                    // Lưu vị trí con trỏ hiện tại
+                    const cursorPos = input.selectionStart;
+                    
+                    // Xóa tất cả các dấu phân cách hàng nghìn
+                    const rawValue = input.value.replace(/\./g, '');
+                    
+                    // Cập nhật giá trị
+                    const numericValue = parseInt(rawValue, 10) || 0;
+                    formik.setFieldValue('salePrice', numericValue);
+                    
+                    // Đặt lại vị trí con trỏ sau khi render (trong setTimeout)
+                    setTimeout(() => {
+                      // Tính toán vị trí con trỏ mới dựa trên số lượng dấu phân cách
+                      const formattedValue = formatNumber(numericValue);
+                      const addedSeparators = formattedValue.split('.').length - 1;
+                      const originalSeparators = input.value.substring(0, cursorPos).split('.').length - 1;
+                      const newCursorPos = cursorPos + (addedSeparators - originalSeparators);
+                      
+                      input.setSelectionRange(newCursorPos, newCursorPos);
+                    }, 0);
                   }}
                   error={formik.touched.salePrice && Boolean(formik.errors.salePrice)}
                   helperText={formik.touched.salePrice && formik.errors.salePrice}
                   InputProps={{
                     inputProps: { 
-                      min: 0,
+                      inputMode: 'numeric',
                       style: { textAlign: 'right' },
                       maxLength: 15
                     }
@@ -539,25 +602,38 @@ const VehicleForm = ({
                   Thêm chi phí mới
                 </Typography>
                 <Grid container spacing={2}>
-                  <Grid item xs={4}>
+                  <Grid item xs={12} sm={4}>
                     <TextField
                       fullWidth
-                      label="Số tiền"
+                      label="Chi phí (VNĐ)"
                       value={newCost.amount}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '' || /^[0-9,.]+$/.test(value)) {
-                          const cleanValue = value.replace(/[,.]/g, '');
-                          if (cleanValue === '' || isNaN(Number(cleanValue))) {
-                            setNewCost({ ...newCost, amount: value });
-                          } else {
-                            setNewCost({ ...newCost, amount: formatNumber(Number(cleanValue)) });
-                          }
-                        }
+                      onChange={(e) => setNewCost({ ...newCost, amount: e.target.value })}
+                      onInput={(e: any) => {
+                        // Lấy phần tử input
+                        const input = e.currentTarget;
+                        
+                        // Lưu vị trí con trỏ hiện tại
+                        const cursorPos = input.selectionStart;
+                        
+                        // Xóa tất cả các dấu phân cách hàng nghìn
+                        const rawValue = input.value.replace(/\./g, '');
+                        
+                        // Cập nhật giá trị
+                        setNewCost({ ...newCost, amount: formatNumber(parseInt(rawValue, 10) || 0) });
+                        
+                        // Đặt lại vị trí con trỏ sau khi render (trong setTimeout)
+                        setTimeout(() => {
+                          const formattedValue = formatNumber(parseInt(rawValue, 10) || 0);
+                          const addedSeparators = formattedValue.split('.').length - 1;
+                          const originalSeparators = input.value.substring(0, cursorPos).split('.').length - 1;
+                          const newCursorPos = cursorPos + (addedSeparators - originalSeparators);
+                          
+                          input.setSelectionRange(newCursorPos, newCursorPos);
+                        }, 0);
                       }}
-                      size="small"
                       InputProps={{
                         inputProps: { 
+                          inputMode: 'numeric',
                           style: { textAlign: 'right' },
                           maxLength: 15
                         }
@@ -711,25 +787,38 @@ const VehicleForm = ({
                       <option value="FULL_PAYMENT">Thanh toán đầy đủ</option>
                     </TextField>
                   </Grid>
-                  <Grid item xs={3}>
+                  <Grid item xs={12} sm={3}>
                     <TextField
                       fullWidth
-                      label="Số tiền"
+                      label="Số tiền (VNĐ)"
                       value={newPayment.amount}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '' || /^[0-9,.]+$/.test(value)) {
-                          const cleanValue = value.replace(/[,.]/g, '');
-                          if (cleanValue === '' || isNaN(Number(cleanValue))) {
-                            setNewPayment({ ...newPayment, amount: value });
-                          } else {
-                            setNewPayment({ ...newPayment, amount: formatNumber(Number(cleanValue)) });
-                          }
-                        }
+                      onChange={(e) => setNewPayment({ ...newPayment, amount: e.target.value })}
+                      onInput={(e: any) => {
+                        // Lấy phần tử input
+                        const input = e.currentTarget;
+                        
+                        // Lưu vị trí con trỏ hiện tại
+                        const cursorPos = input.selectionStart;
+                        
+                        // Xóa tất cả các dấu phân cách hàng nghìn
+                        const rawValue = input.value.replace(/\./g, '');
+                        
+                        // Cập nhật giá trị
+                        setNewPayment({ ...newPayment, amount: formatNumber(parseInt(rawValue, 10) || 0) });
+                        
+                        // Đặt lại vị trí con trỏ sau khi render (trong setTimeout)
+                        setTimeout(() => {
+                          const formattedValue = formatNumber(parseInt(rawValue, 10) || 0);
+                          const addedSeparators = formattedValue.split('.').length - 1;
+                          const originalSeparators = input.value.substring(0, cursorPos).split('.').length - 1;
+                          const newCursorPos = cursorPos + (addedSeparators - originalSeparators);
+                          
+                          input.setSelectionRange(newCursorPos, newCursorPos);
+                        }, 0);
                       }}
-                      size="small"
                       InputProps={{
                         inputProps: { 
+                          inputMode: 'numeric',
                           style: { textAlign: 'right' },
                           maxLength: 15
                         }
