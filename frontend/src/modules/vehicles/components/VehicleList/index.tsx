@@ -26,7 +26,8 @@ import {
   CardActions,
   Grid,
   Divider,
-  Skeleton
+  Skeleton,
+  Snackbar
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import EditIcon from '@mui/icons-material/Edit';
@@ -39,9 +40,6 @@ import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import DateRangeIcon from '@mui/icons-material/DateRange';
 import ColorLensIcon from '@mui/icons-material/ColorLens';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import Pagination from '@mui/material/Pagination';
 import { 
   Vehicle, 
   VehicleStatus, 
@@ -269,19 +267,26 @@ const VehicleList: React.FC<VehicleListProps> = ({
   
   // State cho modal thêm chi phí
   const [costModalOpen, setCostModalOpen] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [costAmount, setCostAmount] = useState('');
-  const [costDescription, setCostDescription] = useState('');
-  const [costError, setCostError] = useState('');
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [costAmount, setCostAmount] = useState<string>('');
+  const [costDescription, setCostDescription] = useState<string>('');
+  const [costError, setCostError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // State cho modal hiển thị công nợ
   const [debtModalOpen, setDebtModalOpen] = useState(false);
-  const [selectedVehicleForDebt, setSelectedVehicleForDebt] = useState(null);
+  const [selectedVehicleForDebt, setSelectedVehicleForDebt] = useState<Vehicle | null>(null);
   
   // State cho modal xác nhận xóa xe
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [vehicleToDelete, setVehicleToDelete] = useState(null);
+  const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
+
+  // State cho thông báo
+  const [snackbarProps, setSnackbarProps] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
   // Mở modal thêm chi phí
   const handleOpenCostModal = (vehicle: Vehicle) => {
@@ -328,8 +333,36 @@ const VehicleList: React.FC<VehicleListProps> = ({
   // Xác nhận xóa xe
   const handleConfirmDelete = () => {
     if (vehicleToDelete) {
-      onDelete(vehicleToDelete.id);
-      handleCloseDeleteConfirm();
+      try {
+        onDelete(vehicleToDelete.id);
+        handleCloseDeleteConfirm();
+        
+        // Tạo thông báo thành công
+        setSnackbarProps({
+          open: true,
+          message: `Đã xóa xe ${vehicleToDelete.name} thành công`,
+          severity: 'success'
+        });
+        
+        // Đóng thông báo sau 3 giây
+        setTimeout(() => {
+          setSnackbarProps(prev => ({ ...prev, open: false }));
+        }, 3000);
+      } catch (error) {
+        console.error("Lỗi khi xóa xe:", error);
+        
+        // Hiển thị thông báo lỗi
+        setSnackbarProps({
+          open: true,
+          message: `Lỗi khi xóa xe: ${error instanceof Error ? error.message : 'Không xác định'}`,
+          severity: 'error'
+        });
+        
+        // Đóng thông báo sau 3 giây
+        setTimeout(() => {
+          setSnackbarProps(prev => ({ ...prev, open: false }));
+        }, 3000);
+      }
     }
   };
 
@@ -391,11 +424,11 @@ const VehicleList: React.FC<VehicleListProps> = ({
   };
 
   // State quản lý hình ảnh
-  const [loadedImages, setLoadedImages] = useState({});
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   
   // Tối ưu hóa ảnh cho thiết bị di động
   const vehicleImages = useMemo(() => {
-    return filteredSoldVehicles.reduce((acc, vehicle) => {
+    return filteredSoldVehicles.reduce<Record<string, string>>((acc, vehicle) => {
       // Sử dụng kích thước nhỏ hơn cho thiết bị di động
       const imageUrl = `https://source.unsplash.com/featured/?car,${vehicle.color},${vehicle.name}`;
       const mobileImageUrl = `https://source.unsplash.com/featured/?car,${vehicle.color},${vehicle.name}&w=200`;
@@ -567,15 +600,23 @@ const VehicleList: React.FC<VehicleListProps> = ({
           }}
         >
           <TableHead>
-            <TableRow className="table-header">
-              <TableCell sx={{ width: '5%' }}>STT</TableCell>
-              <TableCell sx={{ width: '20%' }}>Tên xe</TableCell>
-              <TableCell sx={{ width: '10%' }}>Màu sắc</TableCell>
-              <TableCell sx={{ width: '15%' }}>Ngày nhập</TableCell>
-              <TableCell sx={{ width: '15%' }}>Giá mua</TableCell>
-              <TableCell sx={{ width: '15%' }}>Giá bán</TableCell>
-              <TableCell sx={{ width: '10%' }}>Trạng thái</TableCell>
-              <TableCell sx={{ width: '10%' }}>Thao tác</TableCell>
+            <TableRow>
+              <TableCell width="8%">Mã Xe</TableCell>
+              <TableCell width="12%">Tên Xe</TableCell>
+              <TableCell width="8%">Màu Sắc</TableCell>
+              <TableCell width="6%">Năm SX</TableCell>
+              <TableCell width="8%">ODO (km)</TableCell>
+              <TableCell width="10%">Trạng Thái</TableCell>
+              <TableCell width="8%">Thời Gian Lưu Kho</TableCell>
+              <TableCell width="9%">Chi Phí</TableCell>
+              <TableCell width="9%">Công Nợ</TableCell>
+              <TableCell width="9%">Lợi Nhuận</TableCell>
+              <TableCell width="8%">NV Bán</TableCell>
+              <TableCell width="9%">Giá Mua</TableCell>
+              <TableCell width="9%">Giá Bán</TableCell>
+              <TableCell width="8%">Ngày Nhập</TableCell>
+              <TableCell width="8%">Ngày Xuất</TableCell>
+              <TableCell width="5%">Thao Tác</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -584,15 +625,10 @@ const VehicleList: React.FC<VehicleListProps> = ({
                 <TableCell sx={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{vehicle.id}</TableCell>
                 <TableCell sx={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{vehicle.name}</TableCell>
                 <TableCell sx={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{vehicle.color}</TableCell>
-                <TableCell>{vehicle.importDate}</TableCell>
+                <TableCell>{vehicle.manufacturingYear}</TableCell>
                 <TableCell>
                   <Typography variant="body2" sx={{ fontSize: '1rem' }}>
-                    {formatCurrency(vehicle.purchasePrice)}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" sx={{ fontSize: '1rem' }}>
-                    {formatCurrency(vehicle.salePrice)}
+                    {formatNumber(vehicle.odo)}
                   </Typography>
                 </TableCell>
                 <TableCell>
@@ -612,78 +648,113 @@ const VehicleList: React.FC<VehicleListProps> = ({
                     />
                   </Tooltip>
                 </TableCell>
+                <TableCell 
+                  sx={{ 
+                    color: getStorageTimeColor(vehicle.storageTime),
+          fontWeight: 'bold' 
+        }}
+      >
+                  {vehicle.storageTime} ngày
+                </TableCell>
+                <TableCell 
+                  onClick={() => handleOpenCostModal(vehicle)}
+                  sx={{ 
+                    cursor: 'pointer',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Typography variant="body1">
+                      {formatCurrency(vehicle.cost)}
+                    </Typography>
+                    {(
+                      <Tooltip title="Thêm chi phí">
+                        <AddCircleOutlineIcon 
+                          fontSize="small" 
+                          color="primary" 
+                          sx={{ ml: 1, verticalAlign: 'middle' }}
+                        />
+                      </Tooltip>
+                    )}
+                  </Box>
+                </TableCell>
+                <TableCell 
+                  onClick={() => handleOpenDebtModal(vehicle)}
+                  sx={{ 
+                    cursor: 'pointer',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Typography variant="body2" color="textSecondary" sx={{ fontSize: '1rem' }}>
+                      {formatCurrency(vehicle.debt)}
+                    </Typography>
+                    <Tooltip title="Xem chi tiết công nợ">
+                      <Box component="span" sx={{ ml: 1, fontSize: '0.875rem', color: 'action.active' }}>
+                        ℹ️
+                      </Box>
+                    </Tooltip>
+                  </Box>
+                </TableCell>
+                <TableCell 
+                  sx={{ 
+                    fontWeight: 'bold', 
+                    color: vehicle.profit >= 0 ? 'green' : 'red' 
+                  }}
+                >
+                  {formatCurrency(vehicle.profit)}
+                </TableCell>
                 <TableCell>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <IconButton
-                      size="small"
-                      onClick={() => onEdit(vehicle)}
-                      className="action-button action-button-edit"
-                      sx={{
-                        backgroundColor: 'var(--background-alt)',
-                        '&:hover': {
-                          color: 'var(--primary-color)',
-                        },
-                      }}
-                    >
+                  <Typography variant="body2" sx={{ fontSize: '1rem' }}>
+                    {vehicle.saleStaff?.id || ''}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" sx={{ fontSize: '1rem' }}>
+                    {formatCurrency(vehicle.purchasePrice)}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" sx={{ fontSize: '1rem' }}>
+                    {formatCurrency(vehicle.salePrice)}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" sx={{ fontSize: '1rem' }}>
+                    {formatDate(vehicle.importDate)}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" sx={{ fontSize: '1rem' }}>
+                    {vehicle.exportDate ? formatDate(vehicle.exportDate) : 'Chưa xuất'}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Tooltip title="Sửa">
+                    <IconButton 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onEdit(vehicle);
+                      }} 
+                      color="primary" 
+                      size="small">
                       <EditIcon fontSize="small" />
                     </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpenDeleteConfirm(vehicle)}
-                      className="action-button action-button-delete"
-                      sx={{
-                        backgroundColor: 'var(--background-alt)',
-                        '&:hover': {
-                          color: 'var(--danger-color)',
-                        },
-                      }}
-                    >
+                  </Tooltip>
+                  <Tooltip title="Xóa">
+                    <IconButton onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleOpenDeleteConfirm(vehicle);
+                    }} color="secondary" size="small">
                       <DeleteIcon fontSize="small" />
                     </IconButton>
-                    {vehicle.status !== VehicleStatus.SOLD && (
-                      <IconButton
-                        size="small"
-                        onClick={() => onStatusChange(vehicle)}
-                        className="action-button"
-                        sx={{
-                          backgroundColor: 'var(--background-alt)',
-                          '&:hover': {
-                            color: 'var(--secondary-color)',
-                          },
-                        }}
-                      >
-                        <SwapHorizIcon fontSize="small" />
-                      </IconButton>
-                    )}
-                    {vehicle.status !== VehicleStatus.IN_STOCK && (
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenDebtModal(vehicle)}
-                        className="action-button"
-                        sx={{
-                          backgroundColor: 'var(--background-alt)',
-                          '&:hover': {
-                            color: 'var(--info-color)',
-                          },
-                        }}
-                      >
-                        <AccountBalanceWalletIcon fontSize="small" />
-                      </IconButton>
-                    )}
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpenCostModal(vehicle)}
-                      className="action-button"
-                      sx={{
-                        backgroundColor: 'var(--background-alt)',
-                        '&:hover': {
-                          color: 'var(--warning-color)',
-                        },
-                      }}
-                    >
-                      <AddCircleOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}
@@ -702,257 +773,290 @@ const VehicleList: React.FC<VehicleListProps> = ({
   };
 
   return (
-    <div>
-      <Box className="section-header">
-        <Typography variant="h4" component="h2" className="section-title">
-          Danh sách xe
+    <Box>
+      {/* Bảng xe chưa bán */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h6" gutterBottom sx={{ fontSize: '1.3rem', mb: 0 }}>
+          Xe Đang Quản Lý
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <MonthYearPicker
-            month={selectedMonth}
-            year={selectedYear}
-            onChange={(month, year) => {
-              setSelectedMonth(month);
-              setSelectedYear(year);
-              if (onDateChange) {
-                onDateChange(month, year);
-              }
-            }}
-          />
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddCircleOutlineIcon />}
+        {onAddVehicle && (
+          <Button 
+            variant="contained" 
+            color="primary" 
             onClick={onAddVehicle}
-            sx={{ ml: 2 }}
+            startIcon={<AddCircleOutlineIcon />}
           >
-            Thêm xe
+            Thêm Xe Mới
           </Button>
-        </Box>
+        )}
       </Box>
-
-      <Box className="card" sx={{ mb: 3 }}>
-        <Box className="card-header">
-          <Typography className="card-title">
-            Thống kê tháng {selectedMonth}/{selectedYear}
-          </Typography>
-        </Box>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <DirectionsCarIcon sx={{ color: 'var(--primary-color)', mr: 1 }} />
-              <Box>
-                <Typography variant="body2" color="textSecondary">
-                  Số xe trong kho
-                </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 'var(--font-weight-bold)' }}>
-                  {notSoldVehicles.length}
-                </Typography>
-              </Box>
-            </Box>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <AttachMoneyIcon sx={{ color: 'var(--success-color)', mr: 1 }} />
-              <Box>
-                <Typography variant="body2" color="textSecondary">
-                  Lợi nhuận tháng này
-                </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 'var(--font-weight-bold)' }}>
-                  {formatCurrency(notSoldVehicles.reduce((sum, v) => sum + v.profit, 0))}
-                </Typography>
-              </Box>
-            </Box>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <DateRangeIcon sx={{ color: 'var(--warning-color)', mr: 1 }} />
-              <Box>
-                <Typography variant="body2" color="textSecondary">
-                  Thời gian lưu kho TB
-                </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 'var(--font-weight-bold)' }}>
-                  {notSoldVehicles.length > 0
-                    ? Math.round(notSoldVehicles.reduce((sum, v) => sum + v.storageTime, 0) / notSoldVehicles.length)
-                    : 0} ngày
-                </Typography>
-              </Box>
-            </Box>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <ColorLensIcon sx={{ color: 'var(--info-color)', mr: 1 }} />
-              <Box>
-                <Typography variant="body2" color="textSecondary">
-                  Xe đã bán trong tháng
-                </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 'var(--font-weight-bold)' }}>
-                  {filteredSoldVehicles.length}
-                </Typography>
-              </Box>
-            </Box>
-          </Grid>
-        </Grid>
-      </Box>
-
-      <TableContainer component={Paper} className="table-container">
-        <Table>
-          <TableHead className="table-header">
+      <TableContainer 
+        component={Paper} 
+        sx={{ 
+          width: '100%', 
+          height: 'calc(100vh - 300px)', 
+          overflowX: 'auto',
+          overflowY: 'auto',
+          mb: 3,
+          border: '1px solid #e0e0e0',
+          borderRadius: 1,
+          boxShadow: 1
+        }}
+      >
+        <Table 
+          stickyHeader 
+          aria-label="sticky table"
+          size="small"
+          sx={{ 
+            minWidth: 'auto',
+            tableLayout: 'auto',
+            '& .MuiTableCell-root': {
+              padding: '8px 12px',
+              fontSize: '1rem',
+              whiteSpace: 'nowrap'
+            },
+            '& .MuiTableCell-head': {
+              backgroundColor: '#f5f5f5',
+              fontWeight: 'bold'
+            }
+          }}
+        >
+          <TableHead>
             <TableRow>
-              <TableCell>Mã xe</TableCell>
-              <TableCell>Tên xe</TableCell>
-              <TableCell>Màu sắc</TableCell>
-              <TableCell>Năm SX</TableCell>
-              <TableCell>Trạng thái</TableCell>
-              <TableCell>Giá bán</TableCell>
-              <TableCell>Thời gian lưu kho</TableCell>
-              <TableCell>Hình ảnh</TableCell>
-              <TableCell>Thao tác</TableCell>
+              <TableCell width="8%">Mã Xe</TableCell>
+              <TableCell width="12%">Tên Xe</TableCell>
+              <TableCell width="8%">Màu Sắc</TableCell>
+              <TableCell width="6%">Năm SX</TableCell>
+              <TableCell width="8%">ODO (km)</TableCell>
+              <TableCell width="10%">Trạng Thái</TableCell>
+              <TableCell width="8%">Thời Gian Lưu Kho</TableCell>
+              <TableCell width="9%">Chi Phí</TableCell>
+              <TableCell width="9%">Công Nợ</TableCell>
+              <TableCell width="9%">Lợi Nhuận</TableCell>
+              <TableCell width="8%">NV Bán</TableCell>
+              <TableCell width="9%">Giá Mua</TableCell>
+              <TableCell width="9%">Giá Bán</TableCell>
+              <TableCell width="8%">Ngày Nhập</TableCell>
+              <TableCell width="8%">Ngày Xuất</TableCell>
+              <TableCell width="5%">Thao Tác</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {notSoldVehicles.map((vehicle) => (
-              <TableRow key={vehicle.id} className="table-row">
-                <TableCell>{vehicle.id}</TableCell>
-                <TableCell>{vehicle.name}</TableCell>
-                <TableCell>{vehicle.color}</TableCell>
-                <TableCell>{vehicle.manufacturingYear}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={vehicle.status}
-                    className={`status-badge ${getStatusClassName(vehicle.status)}`}
-                    sx={{
-                      backgroundColor: getStatusColor(vehicle.status),
-                      color: getStatusTextColor(vehicle.status),
-                      border: `1px solid ${getStatusBorderColor(vehicle.status)}`,
-                    }}
-                  />
-                </TableCell>
-                <TableCell sx={{ fontWeight: 'var(--font-weight-semibold)' }}>
-                  {formatCurrency(vehicle.salePrice)}
-                </TableCell>
-                <TableCell>
-                  <Box
-                    sx={{
+            {notSoldVehicles.map((vehicle) => {
+              // Tạo cảnh báo thời gian lưu kho
+              const storageTimeWarning = generateStorageTimeWarning(vehicle.storageTime);
+              // Màu nền cho hàng
+              const rowBackgroundColor = getStorageTimeBackgroundColor(vehicle.storageTime);
+
+              return (
+                <TableRow 
+                  key={vehicle.id} 
+                  hover
+                  sx={{ 
+                    backgroundColor: rowBackgroundColor,
+                    '&:hover': {
+                      backgroundColor: storageTimeWarning.level !== 'normal' 
+                        ? `${rowBackgroundColor} !important` 
+                        : undefined
+                    }
+                  }}
+                >
+                  <TableCell sx={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{vehicle.id}</TableCell>
+                  <TableCell sx={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{vehicle.name}</TableCell>
+                  <TableCell sx={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{vehicle.color}</TableCell>
+                  <TableCell>{vehicle.manufacturingYear}</TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontSize: '1rem' }}>
+                      {formatNumber(vehicle.odo)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Tooltip title="Nhấp để thay đổi trạng thái">
+                      <Chip 
+                        label={vehicle.status} 
+                        color="default"
+                        sx={{ 
+                          backgroundColor: getStatusColor(vehicle.status),
+                          color: getStatusTextColor(vehicle.status),
+                          cursor: 'pointer',
+                          fontSize: '0.9rem',
+                          border: `1px solid ${getStatusBorderColor(vehicle.status)}`
+                        }}
+                        size="small" 
+                        onClick={() => onStatusChange(vehicle)}
+                      />
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell 
+                    sx={{ 
                       color: getStorageTimeColor(vehicle.storageTime),
-                      fontWeight: 'var(--font-weight-semibold)',
+                      fontWeight: 'bold'
                     }}
                   >
                     {vehicle.storageTime} ngày
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  {vehicleImages[vehicle.id] && (
-                    <Box
-                      component="img"
-                      src={vehicleImages[vehicle.id]}
-                      alt={vehicle.name}
-                      sx={{
-                        width: 60,
-                        height: 40,
-                        objectFit: 'cover',
-                        borderRadius: 'var(--radius-sm)',
-                        opacity: loadedImages[vehicle.id] ? 1 : 0.3,
-                        transition: 'opacity 0.3s ease',
-                      }}
-                      onLoad={() => handleImageLoad(vehicle.id)}
-                    />
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <IconButton
-                      size="small"
-                      onClick={() => onEdit(vehicle)}
-                      className="action-button action-button-edit"
-                      sx={{
-                        backgroundColor: 'var(--background-alt)',
-                        '&:hover': {
-                          color: 'var(--primary-color)',
-                        },
-                      }}
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpenDeleteConfirm(vehicle)}
-                      className="action-button action-button-delete"
-                      sx={{
-                        backgroundColor: 'var(--background-alt)',
-                        '&:hover': {
-                          color: 'var(--danger-color)',
-                        },
-                      }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                    {vehicle.status !== VehicleStatus.SOLD && (
-                      <IconButton
-                        size="small"
-                        onClick={() => onStatusChange(vehicle)}
-                        className="action-button"
-                        sx={{
-                          backgroundColor: 'var(--background-alt)',
-                          '&:hover': {
-                            color: 'var(--secondary-color)',
-                          },
-                        }}
-                      >
-                        <SwapHorizIcon fontSize="small" />
+                  </TableCell>
+                  <TableCell 
+                    onClick={() => handleOpenCostModal(vehicle)}
+                    sx={{ 
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                      }
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Typography variant="body1">
+                        {formatCurrency(vehicle.cost)}
+                      </Typography>
+                      {(
+                        <Tooltip title="Thêm chi phí">
+                          <AddCircleOutlineIcon 
+                            fontSize="small" 
+                            color="primary" 
+                            sx={{ ml: 1, verticalAlign: 'middle' }}
+                          />
+                        </Tooltip>
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell 
+                    onClick={() => handleOpenDebtModal(vehicle)}
+                    sx={{ 
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                      }
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Typography variant="body2" color="textSecondary" sx={{ fontSize: '1rem' }}>
+                        {formatCurrency(vehicle.debt)}
+                      </Typography>
+                      <Tooltip title="Xem chi tiết công nợ">
+                        <Box component="span" sx={{ ml: 1, fontSize: '0.875rem', color: 'action.active' }}>
+                          ℹ️
+                        </Box>
+                      </Tooltip>
+                    </Box>
+                  </TableCell>
+                  <TableCell 
+                    sx={{ 
+                      fontWeight: 'bold', 
+                      color: vehicle.profit >= 0 ? 'green' : 'red' 
+                    }}
+                  >
+                    {formatCurrency(vehicle.profit)}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontSize: '1rem' }}>
+                      {vehicle.saleStaff?.id || ''}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontSize: '1rem' }}>
+                      {formatCurrency(vehicle.purchasePrice)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontSize: '1rem' }}>
+                      {formatCurrency(vehicle.salePrice)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontSize: '1rem' }}>
+                      {formatDate(vehicle.importDate)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontSize: '1rem' }}>
+                      {vehicle.exportDate ? formatDate(vehicle.exportDate) : 'Chưa xuất'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Tooltip title="Sửa">
+                      <IconButton 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onEdit(vehicle);
+                        }} 
+                        color="primary" 
+                        size="small">
+                        <EditIcon fontSize="small" />
                       </IconButton>
-                    )}
-                    {vehicle.status !== VehicleStatus.IN_STOCK && (
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenDebtModal(vehicle)}
-                        className="action-button"
-                        sx={{
-                          backgroundColor: 'var(--background-alt)',
-                          '&:hover': {
-                            color: 'var(--info-color)',
-                          },
-                        }}
-                      >
-                        <AccountBalanceWalletIcon fontSize="small" />
+                    </Tooltip>
+                    <Tooltip title="Xóa">
+                      <IconButton onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleOpenDeleteConfirm(vehicle);
+                      }} color="secondary" size="small">
+                        <DeleteIcon fontSize="small" />
                       </IconButton>
-                    )}
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpenCostModal(vehicle)}
-                      className="action-button"
-                      sx={{
-                        backgroundColor: 'var(--background-alt)',
-                        '&:hover': {
-                          color: 'var(--warning-color)',
-                        },
-                      }}
-                    >
-                      <AddCircleOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ))}
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
 
-      {/* Pagination */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-        <Pagination
-          count={Math.ceil(notSoldVehicles.length / 10)}
-          page={Math.ceil((selectedMonth - 1) * 10 / 12) + 1}
-          onChange={(event, page) => {
-            setSelectedMonth(Math.ceil((page - 1) % 12 + 1));
-            setSelectedYear(Math.ceil((selectedMonth - 1) / 12) + 2000);
-            if (onDateChange) {
-              onDateChange(Math.ceil((page - 1) % 12 + 1), Math.ceil((selectedMonth - 1) / 12) + 2000);
-            }
-          }}
-          color="primary"
-        />
+      {/* Bảng xe đã bán */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 4, mb: 2 }}>
+        <Typography variant="h6" sx={{ fontSize: '1.3rem' }}>
+          Xe Đã Bán
+        </Typography>
+        
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Tooltip title="Tháng trước">
+            <IconButton onClick={handlePreviousMonth} size="small">
+              <ChevronLeftIcon />
+            </IconButton>
+          </Tooltip>
+          
+          <FormControl sx={{ width: 180, mx: 1 }}>
+            <TextField
+              value={monthYearString}
+              onChange={handleMonthYearChange}
+              variant="outlined"
+              size="small"
+              InputProps={{
+                endAdornment: (
+                  <IconButton
+                    onClick={() => {
+                      setSelectedMonth(currentDate.getMonth() + 1);
+                      setSelectedYear(currentDate.getFullYear());
+                    }}
+                    size="small"
+                    title="Về tháng hiện tại"
+                  >
+                    <CalendarMonthIcon fontSize="small" />
+                  </IconButton>
+                )
+              }}
+            />
+          </FormControl>
+          
+          <Tooltip title="Tháng sau">
+            <span>
+              <IconButton 
+                onClick={handleNextMonth} 
+                size="small"
+                disabled={
+                  selectedYear > currentDate.getFullYear() || 
+                  (selectedYear === currentDate.getFullYear() && selectedMonth >= currentDate.getMonth() + 1)
+                }
+              >
+                <ChevronRightIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
       </Box>
+      
+      {/* Chọn hiển thị phù hợp */}
+      {isMobile ? renderMobileView() : renderTableView()}
 
       {/* Modal thêm chi phí */}
       <Dialog open={costModalOpen} onClose={handleCloseCostModal} maxWidth="xs" fullWidth>
@@ -1070,34 +1174,35 @@ const VehicleList: React.FC<VehicleListProps> = ({
                   Chưa có khoản thanh toán nào
                 </Typography>
               ) : (
-                <TableContainer>
+                <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300 }}>
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>Ngày thanh toán</TableCell>
                         <TableCell>Loại thanh toán</TableCell>
                         <TableCell>Số tiền</TableCell>
+                        <TableCell>Ngày thanh toán</TableCell>
                         <TableCell>Ghi chú</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {selectedVehicleForDebt.payments.map((payment, index) => (
                         <TableRow key={index}>
-                          <TableCell>{formatDate(payment.date)}</TableCell>
                           <TableCell>{formatPaymentType(payment.type)}</TableCell>
                           <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                          <TableCell>{payment.note || ''}</TableCell>
+                          <TableCell>{formatDate(payment.date)}</TableCell>
+                          <TableCell>{payment.notes || '-'}</TableCell>
                         </TableRow>
                       ))}
+                    </TableBody>
+                    <TableHead>
                       <TableRow>
                         <TableCell>Tổng thanh toán</TableCell>
                         <TableCell>
                           {formatCurrency(selectedVehicleForDebt.payments.reduce((sum, p) => sum + p.amount, 0))}
                         </TableCell>
-                        <TableCell sx={{ border: 'none' }} />
-                        <TableCell sx={{ border: 'none' }} />
+                        <TableCell colSpan={2}></TableCell>
                       </TableRow>
-                    </TableBody>
+                    </TableHead>
                   </Table>
                 </TableContainer>
               )}
@@ -1180,20 +1285,21 @@ const VehicleList: React.FC<VehicleListProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
-    </div>
-  );
-};
 
-// Hàm helper để chuyển trạng thái sang tên class CSS
-const getStatusClassName = (status: VehicleStatus): string => {
-  switch (status) {
-    case VehicleStatus.IN_STOCK: return 'status-in-stock';
-    case VehicleStatus.DEPOSITED: return 'status-deposit';
-    case VehicleStatus.BANK_DEPOSITED: return 'status-bank-deposit';
-    case VehicleStatus.OFFSET: return 'status-offset';
-    case VehicleStatus.SOLD: return 'status-sold';
-    default: return '';
-  }
+      {/* Thông báo */}
+      {snackbarProps.open && (
+        <Snackbar
+          open={snackbarProps.open}
+          autoHideDuration={3000}
+          onClose={() => setSnackbarProps(prev => ({ ...prev, open: false }))}
+        >
+          <Alert onClose={() => setSnackbarProps(prev => ({ ...prev, open: false }))} severity={snackbarProps.severity}>
+            {snackbarProps.message}
+          </Alert>
+        </Snackbar>
+      )}
+    </Box>
+  );
 };
 
 export default VehicleList; 

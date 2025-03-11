@@ -70,8 +70,14 @@ export function generateVehicleId(vehicles: Vehicle[]): string {
   const now = new Date();
   const day = String(now.getDate()).padStart(2, '0');
   const month = String(now.getMonth() + 1).padStart(2, '0');
-  const sequence = String(vehicles.length + 1).padStart(3, '0');
-  return `${day}${month}_${sequence}`;
+  const year = String(now.getFullYear()).substring(2); // Lấy 2 số cuối của năm
+  
+  // Tạo UUID ngắn để đảm bảo duy nhất
+  const timestamp = now.getTime().toString(36);
+  const randomStr = Math.random().toString(36).substring(2, 6);
+  
+  // Tạo mã xe với định dạng: NgàyTháng_Năm_ID ngẫu nhiên
+  return `${day}${month}_${year}_${timestamp.substring(timestamp.length - 3)}${randomStr}`;
 }
 
 // Hàm tính lợi nhuận

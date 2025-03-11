@@ -583,15 +583,51 @@ function App() {
 
   // Xử lý xóa xe
   const handleDeleteVehicle = (vehicleId: string) => {
-    const updatedVehicles = vehicles.filter(vehicle => vehicle.id !== vehicleId);
-    setVehicles(updatedVehicles);
-    localStorage.setItem('vehicles', JSON.stringify(updatedVehicles));
-    
-    // Thêm vào hàng đợi đồng bộ
-    if (isOnline) {
-      synchronizeData();
-    } else {
-      savePendingSync({ type: 'vehicle_delete', data: { id: vehicleId } });
+    // Kiểm tra tồn tại của xe trước khi xóa
+    const vehicleToDelete = vehicles.find(vehicle => vehicle.id === vehicleId);
+    if (!vehicleToDelete) {
+      console.error(`Không tìm thấy xe với ID: ${vehicleId}`);
+      // Hiển thị thông báo lỗi
+      setSyncMessage({
+        message: `Không tìm thấy xe với ID: ${vehicleId}`,
+        type: 'error'
+      });
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
+      return;
+    }
+
+    try {
+      // Lọc ra danh sách xe không bao gồm xe cần xóa
+      const updatedVehicles = vehicles.filter(vehicle => vehicle.id !== vehicleId);
+      setVehicles(updatedVehicles);
+      
+      // Cập nhật localStorage
+      localStorage.setItem('vehicles', JSON.stringify(updatedVehicles));
+      
+      // Hiển thị thông báo thành công
+      setSyncMessage({
+        message: `Đã xóa xe ${vehicleToDelete.name} (${vehicleToDelete.color}) thành công!`,
+        type: 'success'
+      });
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
+      
+      // Thêm vào hàng đợi đồng bộ
+      if (isOnline) {
+        synchronizeData();
+      } else {
+        savePendingSync({ type: 'vehicle_delete', data: { id: vehicleId } });
+      }
+    } catch (error) {
+      console.error("Lỗi khi xóa xe:", error);
+      // Hiển thị thông báo lỗi
+      setSyncMessage({
+        message: `Lỗi khi xóa xe: ${error instanceof Error ? error.message : 'Không xác định'}`,
+        type: 'error'
+      });
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
     }
   };
 
