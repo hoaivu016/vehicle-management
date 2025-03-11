@@ -3,15 +3,21 @@ export enum StaffStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
   ON_LEAVE = 'on_leave',
+  SUSPENDED = 'suspended',
   TERMINATED = 'terminated'
 }
 
 // Định nghĩa enum cho các đội nhóm
 export enum StaffTeam {
   SALES = 'sales',
+  SALES_1 = 'sales_1',
+  SALES_2 = 'sales_2',
+  SALES_3 = 'sales_3',
   MANAGEMENT = 'management',
+  ACCOUNTING = 'accounting',
   SUPPORT = 'support',
-  TECHNICAL = 'technical'
+  TECHNICAL = 'technical',
+  OTHER = 'other'
 }
 
 // Định nghĩa enum cho các vai trò
@@ -19,7 +25,9 @@ export enum StaffRole {
   ADMIN = 'admin',
   MANAGER = 'manager',
   STAFF = 'staff',
-  TRAINEE = 'trainee'
+  TEAM_LEADER = 'team_leader',
+  TRAINEE = 'trainee',
+  INTERN = 'intern'
 }
 
 // Interface cho đối tượng nhân viên
@@ -34,14 +42,17 @@ export interface Staff {
   status: StaffStatus;
   joinDate: string | Date;
   leaveDate?: string | Date;
+  terminationDate?: string | Date;
   salary?: number;
   commissionRate?: number;
   address?: string;
   notes?: string;
+  note?: string;
   vehiclesSold?: number;
   totalCommission?: number;
   createdAt?: string | Date;
   updatedAt?: string | Date;
+  avatar?: string;
 }
 
 // Interface cho thống kê nhân viên

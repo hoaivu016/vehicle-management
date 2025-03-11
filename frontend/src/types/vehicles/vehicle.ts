@@ -63,6 +63,16 @@ export interface Vehicle {
   note: string;
   sellingPrice?: number;
   importPrice?: number;
+  imageUrl?: string; // Đường dẫn hình ảnh
+  selectedImage?: string; // Hình ảnh đã chọn (có thể là base64 hoặc đường dẫn)
+}
+
+// Thêm interface FormVehicle để sử dụng trong các form
+export interface FormVehicle extends Omit<Vehicle, 'id' | 'statusHistory' | 'storageTime' | 'cost' | 'debt' | 'profit' | 'saleStaff' | 'costs' | 'payments'> {
+  id?: string;
+  imageUrl?: string;
+  selectedImage?: string;
+  saleStaffId?: string;
 }
 
 // Hàm tạo mã xe tự động

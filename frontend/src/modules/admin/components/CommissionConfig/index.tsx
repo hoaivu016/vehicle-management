@@ -28,7 +28,8 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 
 import { Staff } from '../../../../models/staff';
-import { KpiTarget, SupportDepartmentBonus } from '../../../../models/kpi';
+import { KpiTarget } from '../../../../models/kpi';
+import { SupportDepartmentBonus, BonusType, AlertInfo, AlertSeverity } from '../../../../types/kpi/supportBonus';
 
 import { useKpiData } from '../../../../hooks/useKpiData';
 import { useAlertInfo } from '../../../../hooks/useAlertInfo';
@@ -58,6 +59,13 @@ enum TabOption {
   DEPARTMENT_KPI = 1,
   MANAGEMENT_KPI = 2,
   SUPPORT_BONUS = 3,
+}
+
+// Thêm thuộc tính isActive vào interface SupportDepartmentBonus
+interface SupportDepartmentBonus {
+  department: string;
+  bonusAmount: number;
+  isActive: boolean;
 }
 
 const CommissionConfig: React.FC<CommissionConfigProps> = ({

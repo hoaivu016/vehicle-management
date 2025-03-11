@@ -1,15 +1,373 @@
+/* Design System CSS Variables */
+:root {
+  /* Colors */
+  --primary-color: #0F4C81;
+  --primary-hover: #0D3D68;
+  --primary-active: #0A2F51;
+  --primary-light: rgba(15, 76, 129, 0.1);
+  
+  --secondary-color: #4CA;
+  --secondary-hover: #3A9988;
+  --secondary-active: #2E8876;
+  --secondary-light: rgba(76, 204, 170, 0.1);
+  
+  --background: #FFFFFF;
+  --background-alt: #F8F9FA;
+  
+  --text-color: #212529;
+  --text-muted: #6C757D;
+  --text-light: #ADB5BD;
+  --text-white: #FFFFFF;
+  
+  --success-color: #28A745;
+  --success-light: rgba(40, 167, 69, 0.1);
+  --warning-color: #FFA500;
+  --warning-light: rgba(255, 165, 0, 0.1);
+  --danger-color: #DC3545;
+  --danger-light: rgba(220, 53, 69, 0.1);
+  --info-color: #17A2B8;
+  --info-light: rgba(23, 162, 184, 0.1);
+  
+  --border-color: #DEE2E6;
+  --border-color-dark: #CED4DA;
+  --border-focus: #80BDFF;
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 9999px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow: 0 2px 6px rgba(0,0,0,0.08);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.12);
+  --shadow-inner: inset 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-focus: 0 0 0 3px rgba(15, 76, 129, 0.15);
+  
+  /* Typography */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 1.75rem;
+  --font-size-3xl: 2rem;
+  
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-loose: 1.75;
+}
+
+/* Cài đặt font */
 body {
+  font-family: 'Mulish', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: var(--text-color);
+  line-height: var(--line-height-normal);
+  background-color: var(--background-alt);
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding: 0;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* Các container */
+.container {
+  padding: var(--spacing-md);
 }
 
-/* Thêm styles toàn cục nếu cần */ 
+/* Card styling */
+.card {
+  background-color: var(--background);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-lg);
+}
+
+.card-header {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.card-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.3px;
+  line-height: 1.3;
+  color: var(--text-color);
+}
+
+/* Bảng */
+.table-container {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  background-color: var(--background);
+  overflow-x: auto;
+}
+
+.table-header {
+  background-color: var(--background-alt);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table-header th {
+  color: var(--primary-color);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: var(--font-size-sm);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table-row {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table-row:hover {
+  background-color: var(--background-alt);
+}
+
+.table-cell {
+  padding: 12px 16px;
+  vertical-align: middle;
+  color: var(--text-color);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+}
+
+/* Trạng thái xe */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  min-width: 70px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.status-in-stock {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #2E7D32;
+  border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.status-deposit {
+  background-color: rgba(255, 152, 0, 0.1);
+  color: #E67E22;
+  border: 1px solid rgba(255, 152, 0, 0.2);
+}
+
+.status-bank-deposit {
+  background-color: rgba(33, 150, 243, 0.1);
+  color: #1976D2;
+  border: 1px solid rgba(33, 150, 243, 0.2);
+}
+
+.status-offset {
+  background-color: rgba(156, 39, 176, 0.1);
+  color: #8E44AD;
+  border: 1px solid rgba(156, 39, 176, 0.2);
+}
+
+.status-sold {
+  background-color: rgba(0, 150, 136, 0.1);
+  color: #00796B;
+  border: 1px solid rgba(0, 150, 136, 0.2);
+}
+
+/* Overrides cho Material UI */
+.MuiTabs-root {
+  background-color: transparent !important;
+}
+
+.MuiAppBar-root .MuiTabs-root {
+  background-color: var(--primary-color) !important;
+  color: var(--text-white) !important;
+}
+
+.MuiAppBar-root .MuiTab-root {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-weight: var(--font-weight-medium) !important;
+}
+
+.MuiAppBar-root .MuiTab-root.Mui-selected {
+  color: white !important;
+  font-weight: var(--font-weight-semibold) !important;
+}
+
+.MuiTabs-indicator {
+  height: 3px !important;
+  background-color: var(--primary-color) !important;
+}
+
+.MuiAppBar-root .MuiTabs-indicator {
+  background-color: white !important;
+}
+
+/* Styling cho datepicker */
+.date-picker-container {
+  background-color: var(--background);
+  border: 1px solid var(--border-color-dark);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  margin-left: var(--spacing-md);
+}
+
+.date-picker-label {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-md);
+  margin-bottom: var(--spacing-xs);
+}
+
+/* Storage time styling */
+.storage-time-normal {
+  color: var(--text-color);
+  font-weight: var(--font-weight-semibold);
+}
+
+.storage-time-warning {
+  color: var(--warning-color);
+  font-weight: var(--font-weight-semibold);
+}
+
+.storage-time-danger {
+  color: var(--danger-color);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Action buttons */
+.action-button {
+  background-color: #f5f7fa;
+  color: #555;
+  border: 1px solid #eaedf0;
+  border-radius: var(--radius-sm);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-button:hover {
+  background-color: #eaedf0;
+}
+
+.action-button-edit:hover {
+  color: var(--primary-color);
+}
+
+.action-button-delete:hover {
+  color: var(--danger-color);
+}
+
+/* Custom styles cho app */
+.app-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.app-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+  color: var(--text-color);
+}
+
+.app-tabs {
+  margin-bottom: var(--spacing-md);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
+}
+
+.section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  color: var(--text-color);
+}
+
+/* Responsive styling */
+@media (max-width: 576px) {
+  /* Card view instead of tables on mobile */
+  .responsive-table .table-row {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+    margin-bottom: var(--spacing-md);
+    border-radius: var(--radius);
+    padding: 0;
+    box-shadow: var(--shadow-sm);
+  }
+  
+  .responsive-table .table-cell {
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  .responsive-table .table-cell::before {
+    content: attr(data-label);
+    font-weight: var(--font-weight-semibold);
+    margin-right: var(--spacing-md);
+  }
+  
+  .responsive-table .table-header {
+    display: none;
+  }
+  
+  /* Date picker positioning on mobile */
+  .date-picker-container {
+    width: 100%;
+    margin: var(--spacing-md) 0;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .section-title {
+    margin-bottom: var(--spacing-sm);
+  }
+}
+
+/* Tablet and desktop */
+@media (min-width: 577px) {
+  .date-picker-container {
+    align-self: center;
+  }
+  
+  .table-container {
+    margin-top: var(--spacing-md);
+  }
+} 
