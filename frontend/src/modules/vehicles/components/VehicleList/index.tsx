@@ -334,10 +334,22 @@ const VehicleList: React.FC<VehicleListProps> = ({
   const handleConfirmDelete = () => {
     if (vehicleToDelete) {
       try {
+        console.log('Đang xóa xe với ID:', vehicleToDelete.id);
+        
+        // Thêm thông báo xác nhận để debug
+        setSnackbarProps({
+          open: true,
+          message: `Đang xóa xe ${vehicleToDelete.name}... Vui lòng đợi`,
+          severity: 'info'
+        });
+        
+        // Gọi hàm onDelete từ props
         onDelete(vehicleToDelete.id);
+        
+        // Đóng modal xác nhận
         handleCloseDeleteConfirm();
         
-        // Tạo thông báo thành công
+        // Hiển thị thông báo thành công
         setSnackbarProps({
           open: true,
           message: `Đã xóa xe ${vehicleToDelete.name} thành công`,
@@ -363,6 +375,13 @@ const VehicleList: React.FC<VehicleListProps> = ({
           setSnackbarProps(prev => ({ ...prev, open: false }));
         }, 3000);
       }
+    } else {
+      console.error('Không có xe nào được chọn để xóa');
+      setSnackbarProps({
+        open: true,
+        message: 'Lỗi: Không có xe nào được chọn để xóa',
+        severity: 'error'
+      });
     }
   };
 

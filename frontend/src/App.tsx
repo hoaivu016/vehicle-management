@@ -614,6 +614,8 @@ function App() {
 
   // Xử lý xóa xe
   const handleDeleteVehicle = (vehicleId: string) => {
+    console.log('handleDeleteVehicle được gọi với ID:', vehicleId);
+    
     // Kiểm tra tồn tại của xe trước khi xóa
     const vehicleToDelete = vehicles.find(vehicle => vehicle.id === vehicleId);
     if (!vehicleToDelete) {
@@ -629,12 +631,18 @@ function App() {
     }
 
     try {
+      console.log('Thông tin xe sẽ bị xóa:', JSON.stringify(vehicleToDelete));
+      
       // Lọc ra danh sách xe không bao gồm xe cần xóa
       const updatedVehicles = vehicles.filter(vehicle => vehicle.id !== vehicleId);
+      console.log(`Số lượng xe trước khi xóa: ${vehicles.length}, sau khi xóa: ${updatedVehicles.length}`);
+      
+      // Cập nhật state
       setVehicles(updatedVehicles);
       
       // Cập nhật localStorage
       localStorage.setItem('vehicles', JSON.stringify(updatedVehicles));
+      console.log('Đã lưu danh sách xe mới vào localStorage');
       
       // Hiển thị thông báo thành công
       setSyncMessage({
@@ -650,6 +658,8 @@ function App() {
       } else {
         savePendingSync({ type: 'vehicle_delete', data: { id: vehicleId } });
       }
+      
+      console.log('Xóa xe hoàn tất');
     } catch (error) {
       console.error("Lỗi khi xóa xe:", error);
       // Hiển thị thông báo lỗi
