@@ -45,16 +45,16 @@ export const formatNumber = (value: number | undefined | null): string => {
 export const parseFormattedNumber = (formattedValue: string): number => {
   if (!formattedValue) return 0;
   
-  // Loại bỏ tất cả ký tự không phải số, ngoại trừ dấu thập phân
-  const numericValue = formattedValue.replace(/[^\d.-]/g, '');
+  // Loại bỏ tất cả các ký tự không phải số (không giữ lại dấu chấm)
+  const numericValue = formattedValue.replace(/[^\d]/g, '');
   
   // Xử lý chuỗi số lớn
   if (numericValue.length > 15) {
     console.warn('Số quá lớn, có thể gây mất độ chính xác:', numericValue);
   }
   
-  // Chuyển đổi thành số
-  return parseFloat(numericValue) || 0;
+  // Chuyển đổi thành số nguyên
+  return parseInt(numericValue, 10) || 0;
 };
 
 /**
