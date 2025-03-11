@@ -267,6 +267,11 @@ function App() {
           type: 'success'
         });
         setShowSyncMessage(true);
+        
+        // Tự động ẩn thông báo sau 3 giây
+        setTimeout(() => {
+          setShowSyncMessage(false);
+        }, 3000);
       }
     } catch (error) {
       console.error('Lỗi khi đồng bộ dữ liệu:', error);
@@ -275,6 +280,11 @@ function App() {
         type: 'error'
       });
       setShowSyncMessage(true);
+      
+      // Tự động ẩn thông báo sau 3 giây
+      setTimeout(() => {
+        setShowSyncMessage(false);
+      }, 3000);
     } finally {
       setIsSyncing(false);
     }
@@ -282,10 +292,27 @@ function App() {
 
   // Kiểm tra kết nối Supabase khi khởi động
   useEffect(() => {
+    let isMounted = true;
+    let isCheckingConnection = false;
+    
     const checkConnection = async () => {
+      // Nếu đang đồng bộ hoặc đang kiểm tra, bỏ qua
+      if (isCheckingConnection || isSyncing) return;
+      
       try {
+        isCheckingConnection = true;
         const connectionCheck = await supabase.from('vehicles').select('count').single();
         const isConnected = Boolean(connectionCheck);
+        
+        // Kiểm tra component còn mounted không
+        if (!isMounted) return;
+        
+        // Nếu trạng thái kết nối không thay đổi, không cần làm gì thêm
+        if (isConnected === isOnline) {
+          isCheckingConnection = false;
+          return;
+        }
+        
         setIsOnline(isConnected);
         
         if (isConnected) {
@@ -314,21 +341,24 @@ function App() {
             console.log('Không thể lưu log đồng bộ, có thể bảng sync_logs chưa được tạo');
           }
           
+          // Chỉ đồng bộ dữ liệu nếu chuyển từ offline sang online
           await synchronizeData();
         }
         
-        return isConnected;
       } catch (error) {
         console.error("Lỗi khi kiểm tra kết nối:", error);
-        setIsOnline(false);
-        return false;
+        if (isMounted) {
+          setIsOnline(false);
+        }
+      } finally {
+        isCheckingConnection = false;
       }
     };
 
     checkConnection();
 
-    // Kiểm tra kết nối mỗi phút
-    const interval = setInterval(checkConnection, 60000);
+    // Kiểm tra kết nối mỗi phút, thời gian dài hơn
+    const interval = setInterval(checkConnection, 300000); // 5 phút
     
     // Kiểm tra khi mạng thay đổi
     const handleOnline = () => {
@@ -338,10 +368,11 @@ function App() {
     window.addEventListener('online', handleOnline);
     
     return () => {
+      isMounted = false;
       clearInterval(interval);
       window.removeEventListener('online', handleOnline);
     };
-  }, [synchronizeData]);
+  }, [isOnline, isSyncing]);
 
   // State cho danh sách xe
   const [vehicles, setVehicles] = useState<Vehicle[]>(() => {
