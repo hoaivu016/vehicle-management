@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, type FC, type ChangeEvent } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -51,7 +51,6 @@ import {
   PaymentInfo
 } from '../../../../types/vehicles/vehicle';
 import { formatCurrency, formatDate, formatNumber } from '../../../../utils/formatters';
-import MonthYearPicker from '../../../../components/MonthYearPicker';
 
 // Sử dụng VehicleStatus để loại bỏ cảnh báo eslint
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -137,7 +136,7 @@ interface VehicleListProps {
 }
 
 // Component danh sách xe
-const VehicleList: React.FC<VehicleListProps> = ({ 
+const VehicleList: FC<VehicleListProps> = ({ 
   vehicles, 
   onEdit, 
   onDelete, 
@@ -234,7 +233,7 @@ const VehicleList: React.FC<VehicleListProps> = ({
   };
 
   // Hàm xử lý khi thay đổi chuỗi tháng/năm
-  const handleMonthYearChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMonthYearChange = (event: { target: { value: string } }) => {
     setMonthYearString(event.target.value);
     
     try {
@@ -417,7 +416,7 @@ const VehicleList: React.FC<VehicleListProps> = ({
   };
 
   // Xử lý thay đổi số tiền
-  const handleCostAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCostAmountChange = (e: { target: { value: string } }) => {
     const value = e.target.value;
     // Chỉ cho phép nhập số và dấu chấm
     if (value === '' || /^[0-9,.]+$/.test(value)) {

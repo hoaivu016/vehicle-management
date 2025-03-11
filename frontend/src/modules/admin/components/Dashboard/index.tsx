@@ -13,7 +13,6 @@ import { Staff, StaffTeam } from '../../../../types/staff/staff';
 import { Vehicle, VehicleStatus } from '../../../../types/vehicles/vehicle';
 import { KpiTarget, KpiTargetType, calculateKpiCompletion, calculateSalesBonus } from '../../../../models/kpi';
 import { formatCurrency } from '../../../../utils/formatters';
-import MonthYearPicker from '../../../../components/MonthYearPicker';
 import RevenueReport from './RevenueReport';
 import SalesStaffReport from './SalesStaffReport';
 import KPITable from './KPITable';
@@ -309,78 +308,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [propSelectedMonth, propSelectedYear]);
 
-  // Hàm xử lý khi di chuyển tới tháng trước
-  const handlePreviousMonth = () => {
-    let newMonth = selectedMonth - 1;
-    let newYear = selectedYear;
-    
-    if (newMonth < 1) {
-      newMonth = 12;
-      newYear -= 1;
-    }
-    
-    setSelectedMonth(newMonth);
-    setSelectedYear(newYear);
-    
-    // Thông báo thay đổi lên component cha
-    if (onDateChange) {
-      onDateChange(newMonth, newYear);
-    }
-  };
-  
-  // Hàm xử lý khi di chuyển tới tháng sau
-  const handleNextMonth = () => {
-    let newMonth = selectedMonth + 1;
-    let newYear = selectedYear;
-    
-    if (newMonth > 12) {
-      newMonth = 1;
-      newYear += 1;
-    }
-    
-    // Không cho phép chọn tháng trong tương lai
-    if (newYear > currentDate.getFullYear() || 
-        (newYear === currentDate.getFullYear() && newMonth > currentDate.getMonth() + 1)) {
-      return;
-    }
-    
-    setSelectedMonth(newMonth);
-    setSelectedYear(newYear);
-    
-    // Thông báo thay đổi lên component cha
-    if (onDateChange) {
-      onDateChange(newMonth, newYear);
-    }
-  };
-
-  // Hàm xử lý khi thay đổi chuỗi tháng/năm
-  const handleMonthYearChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setMonthYearString(event.target.value);
-    
-    // Phân tích chuỗi ngày tháng để cập nhật state
-    try {
-      // Dự kiến format: "Tháng M/YYYY"
-      const matches = event.target.value.match(/Tháng\s+(\d{1,2})\/(\d{4})/);
-      if (matches && matches.length === 3) {
-        const month = parseInt(matches[1], 10);
-        const year = parseInt(matches[2], 10);
-        
-        if (month >= 1 && month <= 12 && year >= 2000) {
-          // Không cho phép chọn tháng trong tương lai
-          if (year > currentDate.getFullYear() || 
-              (year === currentDate.getFullYear() && month > currentDate.getMonth() + 1)) {
-            return;
-          }
-          
-          setSelectedMonth(month);
-          setSelectedYear(year);
-        }
-      }
-    } catch (error) {
-      console.error("Lỗi khi phân tích chuỗi tháng/năm:", error);
-    }
-  };
-
   // Lấy danh sách KPI của tháng/năm được chọn thay vì tháng hiện tại
   const currentKpis = useMemo(() => 
     kpiList.filter(kpi => kpi.year === selectedYear && kpi.month === selectedMonth),
@@ -568,20 +495,31 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <Box>
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
-        mb: 4 
-      }}>
-        <Typography variant="h4">
-        Tổng quan quản trị
-      </Typography>
-
+    <Box sx={{ width: '100%' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+        <Typography variant="h5" component="h1" sx={{ flexGrow: 1 }}>
+          Tổng Quan Quản Lý
+        </Typography>
+        
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Tooltip title="Tháng trước">
-            <IconButton onClick={handlePreviousMonth} size="small">
+            <IconButton onClick={() => {
+              let newMonth = selectedMonth - 1;
+              let newYear = selectedYear;
+              
+              if (newMonth < 1) {
+                newMonth = 12;
+                newYear -= 1;
+              }
+              
+              setSelectedMonth(newMonth);
+              setSelectedYear(newYear);
+              
+              // Thông báo thay đổi lên component cha
+              if (onDateChange) {
+                onDateChange(newMonth, newYear);
+              }
+            }} size="small">
               <ChevronLeftIcon />
             </IconButton>
           </Tooltip>
@@ -589,15 +527,51 @@ const Dashboard: React.FC<DashboardProps> = ({
           <FormControl sx={{ width: 180, mx: 1 }}>
             <TextField
               value={monthYearString}
-              onChange={handleMonthYearChange}
+              onChange={(event) => {
+                setMonthYearString(event.target.value);
+                
+                try {
+                  // Dự kiến format: "Tháng M/YYYY"
+                  const matches = event.target.value.match(/Tháng\s+(\d{1,2})\/(\d{4})/);
+                  if (matches && matches.length === 3) {
+                    const month = parseInt(matches[1], 10);
+                    const year = parseInt(matches[2], 10);
+                    
+                    if (month >= 1 && month <= 12 && year >= 2000) {
+                      // Không cho phép chọn tháng trong tương lai
+                      if (year > currentDate.getFullYear() || 
+                          (year === currentDate.getFullYear() && month > currentDate.getMonth() + 1)) {
+                        return;
+                      }
+                      
+                      setSelectedMonth(month);
+                      setSelectedYear(year);
+                      
+                      // Thông báo thay đổi lên component cha
+                      if (onDateChange) {
+                        onDateChange(month, year);
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error("Lỗi khi phân tích chuỗi tháng/năm:", error);
+                }
+              }}
               variant="outlined"
               size="small"
               InputProps={{
                 endAdornment: (
                   <IconButton
                     onClick={() => {
-                      setSelectedMonth(currentDate.getMonth() + 1);
-                      setSelectedYear(currentDate.getFullYear());
+                      const currentMonth = currentDate.getMonth() + 1;
+                      const currentYear = currentDate.getFullYear();
+                      setSelectedMonth(currentMonth);
+                      setSelectedYear(currentYear);
+                      
+                      // Thông báo thay đổi lên component cha
+                      if (onDateChange) {
+                        onDateChange(currentMonth, currentYear);
+                      }
                     }}
                     size="small"
                     title="Về tháng hiện tại"
@@ -612,7 +586,29 @@ const Dashboard: React.FC<DashboardProps> = ({
           <Tooltip title="Tháng sau">
             <span>
               <IconButton 
-                onClick={handleNextMonth} 
+                onClick={() => {
+                  let newMonth = selectedMonth + 1;
+                  let newYear = selectedYear;
+                  
+                  if (newMonth > 12) {
+                    newMonth = 1;
+                    newYear += 1;
+                  }
+                  
+                  // Không cho phép chọn tháng trong tương lai
+                  if (newYear > currentDate.getFullYear() || 
+                      (newYear === currentDate.getFullYear() && newMonth > currentDate.getMonth() + 1)) {
+                    return;
+                  }
+                  
+                  setSelectedMonth(newMonth);
+                  setSelectedYear(newYear);
+                  
+                  // Thông báo thay đổi lên component cha
+                  if (onDateChange) {
+                    onDateChange(newMonth, newYear);
+                  }
+                }}
                 size="small"
                 disabled={
                   selectedYear > currentDate.getFullYear() || 

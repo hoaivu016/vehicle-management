@@ -43,26 +43,52 @@ export interface CostInfo {
 // Interface xe được mở rộng
 export interface Vehicle {
   id: string;
-  name: string;
-  color: string;
-  manufacturingYear: number;
+  name: string | null;
+  color: string | null;
+  manufacturingYear: number | null;
   odo: number;
   status: VehicleStatus;
-  statusHistory: StatusHistory[];
-  storageTime: number;
-  cost: number;
-  costs: CostInfo[];  // Danh sách chi phí chi tiết
-  debt: number;
-  profit: number;
-  payments: PaymentInfo[];
-  saleStaff: SaleStaff;
+  importDate: Date;
+  exportDate: Date | null;
   purchasePrice: number;
   salePrice: number;
-  importDate: Date;
-  exportDate?: Date;
-  note: string;
-  sellingPrice?: number;
-  importPrice?: number;
+  profit: number;
+  debt: number;
+  cost: number;
+  storageTime: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  costs: VehicleCost[];
+  payments: VehiclePayment[];
+  saleStaff?: {
+    id: string;
+    name: string;
+    team: string;
+    expectedCommission: number;
+  };
+  statusHistory: StatusChange[];
+}
+
+export interface VehicleCost {
+  id: string;
+  vehicleId: string;
+  amount: number;
+  costDate: Date;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VehiclePayment {
+  id: string;
+  vehicleId: string;
+  amount: number;
+  paymentDate: Date;
+  paymentType: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // Hàm tạo mã xe tự động
@@ -70,15 +96,14 @@ export function generateVehicleId(vehicles: Vehicle[]): string {
   const now = new Date();
   const day = String(now.getDate()).padStart(2, '0');
   const month = String(now.getMonth() + 1).padStart(2, '0');
-  const year = String(now.getFullYear()).substring(2); // Lấy 2 số cuối của năm
   
-  // Tạo UUID hoàn toàn ngẫu nhiên
-  const randomStr = Math.random().toString(36).substring(2, 6);
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 8);
+  // Lấy số thứ tự tiếp theo trong ngày
+  const today = `${day}${month}`;
+  const todayVehicles = vehicles.filter(v => v.id.startsWith(today));
+  const nextNumber = (todayVehicles.length + 1).toString().padStart(2, '0');
   
-  // Tạo mã xe với định dạng: NgàyTháng_Năm_ID ngẫu nhiên
-  return `V${day}${month}${year}${timestamp.substring(timestamp.length - 3)}${randomStr}`;
+  // Tạo mã xe với định dạng: DDMM_XX
+  return `${day}${month}_${nextNumber}`;
 }
 
 // Hàm tính lợi nhuận

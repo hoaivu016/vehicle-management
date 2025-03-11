@@ -138,21 +138,63 @@ export const syncPendingActions = async (): Promise<boolean> => {
 // Hàm tải dữ liệu từ Supabase
 export const loadVehiclesFromSupabase = async (): Promise<Vehicle[]> => {
   try {
-    const { data, error } = await supabase
+    console.log('Bắt đầu tải dữ liệu xe từ Supabase');
+    
+    // Lấy danh sách xe
+    const { data: vehiclesData, error: vehiclesError } = await supabase
       .from('vehicles')
-      .select('*');
+      .select('*')
+      .order('created_at', { ascending: false });
       
-    if (error) throw error;
+    if (vehiclesError) {
+      console.error('Lỗi khi tải dữ liệu xe:', vehiclesError);
+      throw vehiclesError;
+    }
+
+    // Lấy chi phí của xe
+    const { data: costsData, error: costsError } = await supabase
+      .from('vehicle_costs')
+      .select('*');
+
+    if (costsError) {
+      console.error('Lỗi khi tải dữ liệu chi phí:', costsError);
+    }
+
+    // Lấy thanh toán của xe
+    const { data: paymentsData, error: paymentsError } = await supabase
+      .from('vehicle_payments')
+      .select('*');
+
+    if (paymentsError) {
+      console.error('Lỗi khi tải dữ liệu thanh toán:', paymentsError);
+    }
+
+    // Gộp dữ liệu
+    const vehicles = vehiclesData?.map(vehicle => ({
+      ...vehicle,
+      importDate: new Date(vehicle.import_date),
+      exportDate: vehicle.export_date ? new Date(vehicle.export_date) : null,
+      costs: costsData?.filter(cost => cost.vehicle_id === vehicle.id) || [],
+      payments: paymentsData?.filter(payment => payment.vehicle_id === vehicle.id) || []
+    })) || [];
+
+    console.log('Dữ liệu từ server:', vehicles.length, 'xe');
     
     // Lấy dữ liệu local hiện tại
     const savedVehicles = localStorage.getItem('vehicles');
     const localVehicles = savedVehicles ? JSON.parse(savedVehicles) : [];
+    console.log('Dữ liệu local:', localVehicles.length, 'xe');
     
-    // Merge dữ liệu thay vì trả về trực tiếp dữ liệu từ server
-    return mergeData(localVehicles, data || []);
+    // Merge dữ liệu
+    const mergedData = mergeData(localVehicles, vehicles);
+    console.log('Dữ liệu sau khi merge:', mergedData.length, 'xe');
+    
+    // Lưu lại vào localStorage
+    localStorage.setItem('vehicles', JSON.stringify(mergedData));
+    
+    return mergedData;
   } catch (error) {
     console.error('Lỗi khi tải xe từ Supabase:', error);
-    // Trả về dữ liệu local nếu có lỗi
     const savedVehicles = localStorage.getItem('vehicles');
     return savedVehicles ? JSON.parse(savedVehicles) : [];
   }
@@ -160,18 +202,36 @@ export const loadVehiclesFromSupabase = async (): Promise<Vehicle[]> => {
 
 export const loadStaffFromSupabase = async (): Promise<Staff[]> => {
   try {
-    const { data, error } = await supabase
+    // Lấy danh sách nhân viên
+    const { data: staffData, error: staffError } = await supabase
       .from('staff')
       .select('*');
       
-    if (error) throw error;
+    if (staffError) throw staffError;
+
+    // Lấy KPI targets
+    const { data: kpiData, error: kpiError } = await supabase
+      .from('kpi_targets')
+      .select('*');
+
+    if (kpiError) {
+      console.error('Lỗi khi tải dữ liệu KPI:', kpiError);
+    }
+
+    // Gộp dữ liệu
+    const staff = staffData?.map(member => ({
+      ...member,
+      joinDate: new Date(member.join_date),
+      leaveDate: member.leave_date ? new Date(member.leave_date) : null,
+      kpiTargets: kpiData?.filter(kpi => kpi.staff_id === member.id) || []
+    })) || [];
     
     // Lấy dữ liệu local hiện tại
     const savedStaff = localStorage.getItem('staffList');
     const localStaff = savedStaff ? JSON.parse(savedStaff) : [];
     
-    // Merge dữ liệu thay vì trả về trực tiếp dữ liệu từ server
-    return mergeData(localStaff, data || []);
+    // Merge dữ liệu
+    return mergeData(localStaff, staff);
   } catch (error) {
     console.error('Lỗi khi tải nhân viên từ Supabase:', error);
     const savedStaff = localStorage.getItem('staffList');
@@ -187,12 +247,15 @@ export const loadKpiFromSupabase = async (): Promise<KpiTarget[]> => {
       
     if (error) throw error;
     
-    // Lấy dữ liệu local hiện tại
+    const kpiTargets = data?.map(kpi => ({
+      ...kpi,
+      targetMonth: kpi.target_month ? new Date(kpi.target_month) : null
+    })) || [];
+    
     const savedKpis = localStorage.getItem('kpis');
     const localKpis = savedKpis ? JSON.parse(savedKpis) : [];
     
-    // Merge dữ liệu thay vì trả về trực tiếp dữ liệu từ server
-    return mergeData(localKpis, data || []);
+    return mergeData(localKpis, kpiTargets);
   } catch (error) {
     console.error('Lỗi khi tải KPI từ Supabase:', error);
     const savedKpis = localStorage.getItem('kpis');
@@ -208,12 +271,15 @@ export const loadSupportBonusFromSupabase = async (): Promise<SupportDepartmentB
       
     if (error) throw error;
     
-    // Lấy dữ liệu local hiện tại
+    const bonuses = data?.map(bonus => ({
+      ...bonus,
+      bonusMonth: bonus.bonus_month ? new Date(bonus.bonus_month) : null
+    })) || [];
+    
     const savedBonuses = localStorage.getItem('supportBonuses');
     const localBonuses = savedBonuses ? JSON.parse(savedBonuses) : [];
     
-    // Merge dữ liệu thay vì trả về trực tiếp dữ liệu từ server
-    return mergeData(localBonuses, data || []);
+    return mergeData(localBonuses, bonuses);
   } catch (error) {
     console.error('Lỗi khi tải thưởng phòng hỗ trợ từ Supabase:', error);
     const savedBonuses = localStorage.getItem('supportBonuses');

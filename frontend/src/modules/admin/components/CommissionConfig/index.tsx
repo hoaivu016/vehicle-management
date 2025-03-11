@@ -28,13 +28,11 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 
 import { Staff } from '../../../../models/staff';
-import { KpiTarget } from '../../../../models/kpi';
-import { SupportDepartmentBonus, BonusType, AlertInfo, AlertSeverity } from '../../../../types/kpi/supportBonus';
+import { KpiTarget, SupportDepartmentBonus } from '../../../../models/kpi';
 
 import { useKpiData } from '../../../../hooks/useKpiData';
 import { useAlertInfo } from '../../../../hooks/useAlertInfo';
 import { formatNumber } from '../../../../utils/formatters';
-import MonthYearPicker from '../../../../components/MonthYearPicker';
 
 // Interface cho props của component
 interface CommissionConfigProps {
@@ -59,13 +57,6 @@ enum TabOption {
   DEPARTMENT_KPI = 1,
   MANAGEMENT_KPI = 2,
   SUPPORT_BONUS = 3,
-}
-
-// Thêm thuộc tính isActive vào interface SupportDepartmentBonus
-interface SupportDepartmentBonus {
-  department: string;
-  bonusAmount: number;
-  isActive: boolean;
 }
 
 const CommissionConfig: React.FC<CommissionConfigProps> = ({
@@ -493,11 +484,111 @@ const CommissionConfig: React.FC<CommissionConfigProps> = ({
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
           Cấu hình KPI & Thưởng - Tháng {selectedDate.getMonth() + 1}/{selectedDate.getFullYear()}
         </Typography>
-        <MonthYearPicker
-          selectedMonth={selectedDate.getMonth() + 1}
-          selectedYear={selectedDate.getFullYear()}
-          onChange={handleDateChange}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Tooltip title="Tháng trước">
+            <IconButton onClick={() => {
+              const newDate = new Date(selectedDate);
+              newDate.setMonth(newDate.getMonth() - 1);
+              const month = newDate.getMonth() + 1;
+              const year = newDate.getFullYear();
+              
+              setSelectedDate(newDate);
+              if (onDateChange) {
+                onDateChange(month, year);
+              }
+            }} size="small">
+              <ChevronLeftIcon />
+            </IconButton>
+          </Tooltip>
+          
+          <FormControl sx={{ width: 180, mx: 1 }}>
+            <TextField
+              value={monthYearString}
+              onChange={(event) => {
+                setMonthYearString(event.target.value);
+                
+                // Phân tích chuỗi để lấy tháng và năm
+                const match = event.target.value.match(/Tháng\s+(\d+)\/(\d+)/);
+                if (match) {
+                  const month = parseInt(match[1], 10);
+                  const year = parseInt(match[2], 10);
+                  
+                  if (!isNaN(month) && !isNaN(year) && month >= 1 && month <= 12) {
+                    const newDate = new Date(selectedDate);
+                    newDate.setMonth(month - 1);
+                    newDate.setFullYear(year);
+                    setSelectedDate(newDate);
+                    
+                    if (onDateChange) {
+                      onDateChange(month, year);
+                    }
+                  }
+                }
+              }}
+              variant="outlined"
+              size="small"
+              InputProps={{
+                endAdornment: (
+                  <IconButton
+                    onClick={() => {
+                      const currentDate = new Date();
+                      const month = currentDate.getMonth() + 1;
+                      const year = currentDate.getFullYear();
+                      
+                      const newDate = new Date();
+                      setSelectedDate(newDate);
+                      
+                      if (onDateChange) {
+                        onDateChange(month, year);
+                      }
+                    }}
+                    size="small"
+                    title="Về tháng hiện tại"
+                  >
+                    <CalendarMonthIcon fontSize="small" />
+                  </IconButton>
+                )
+              }}
+            />
+          </FormControl>
+          
+          <Tooltip title="Tháng sau">
+            <span>
+              <IconButton 
+                onClick={() => {
+                  const newDate = new Date(selectedDate);
+                  newDate.setMonth(newDate.getMonth() + 1);
+                  
+                  // Kiểm tra không vượt quá tháng hiện tại
+                  const currentDate = new Date();
+                  if (
+                    newDate.getFullYear() > currentDate.getFullYear() || 
+                    (newDate.getFullYear() === currentDate.getFullYear() && 
+                    newDate.getMonth() > currentDate.getMonth())
+                  ) {
+                    return;
+                  }
+                  
+                  const month = newDate.getMonth() + 1;
+                  const year = newDate.getFullYear();
+                  
+                  setSelectedDate(newDate);
+                  if (onDateChange) {
+                    onDateChange(month, year);
+                  }
+                }}
+                size="small"
+                disabled={
+                  selectedDate.getFullYear() > new Date().getFullYear() || 
+                  (selectedDate.getFullYear() === new Date().getFullYear() && 
+                   selectedDate.getMonth() >= new Date().getMonth())
+                }
+              >
+                <ChevronRightIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
       </Box>
 
       <Paper sx={{ width: '100%' }}>

@@ -370,30 +370,9 @@ const VehicleForm = ({
                   label="Số Km Đã Đi"
                   type="text"
                   value={formatNumber(formik.values.odo)}
-                  onInput={(e: any) => {
-                    // Lấy phần tử input
-                    const input = e.currentTarget;
-                    
-                    // Lưu vị trí con trỏ hiện tại
-                    const cursorPos = input.selectionStart;
-                    
-                    // Xóa tất cả các dấu phân cách hàng nghìn
-                    const rawValue = input.value.replace(/\./g, '');
-                    
-                    // Cập nhật giá trị
-                    const numericValue = parseInt(rawValue, 10) || 0;
-                    formik.setFieldValue('odo', numericValue);
-                    
-                    // Đặt lại vị trí con trỏ sau khi render (trong setTimeout)
-                    setTimeout(() => {
-                      // Tính toán vị trí con trỏ mới dựa trên số lượng dấu phân cách
-                      const formattedValue = formatNumber(numericValue);
-                      const addedSeparators = formattedValue.split('.').length - 1;
-                      const originalSeparators = input.value.substring(0, cursorPos).split('.').length - 1;
-                      const newCursorPos = cursorPos + (addedSeparators - originalSeparators);
-                      
-                      input.setSelectionRange(newCursorPos, newCursorPos);
-                    }, 0);
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    formik.setFieldValue('odo', parseInt(value, 10) || 0);
                   }}
                   error={formik.touched.odo && Boolean(formik.errors.odo)}
                   helperText={formik.touched.odo && formik.errors.odo}
@@ -414,30 +393,9 @@ const VehicleForm = ({
                   label="Giá Mua (VNĐ)"
                   type="text"
                   value={formatNumber(formik.values.purchasePrice)}
-                  onInput={(e: any) => {
-                    // Lấy phần tử input
-                    const input = e.currentTarget;
-                    
-                    // Lưu vị trí con trỏ hiện tại
-                    const cursorPos = input.selectionStart;
-                    
-                    // Xóa tất cả các dấu phân cách hàng nghìn
-                    const rawValue = input.value.replace(/\./g, '');
-                    
-                    // Cập nhật giá trị
-                    const numericValue = parseInt(rawValue, 10) || 0;
-                    formik.setFieldValue('purchasePrice', numericValue);
-                    
-                    // Đặt lại vị trí con trỏ sau khi render (trong setTimeout)
-                    setTimeout(() => {
-                      // Tính toán vị trí con trỏ mới dựa trên số lượng dấu phân cách
-                      const formattedValue = formatNumber(numericValue);
-                      const addedSeparators = formattedValue.split('.').length - 1;
-                      const originalSeparators = input.value.substring(0, cursorPos).split('.').length - 1;
-                      const newCursorPos = cursorPos + (addedSeparators - originalSeparators);
-                      
-                      input.setSelectionRange(newCursorPos, newCursorPos);
-                    }, 0);
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    formik.setFieldValue('purchasePrice', parseInt(value, 10) || 0);
                   }}
                   error={formik.touched.purchasePrice && Boolean(formik.errors.purchasePrice)}
                   helperText={formik.touched.purchasePrice && formik.errors.purchasePrice}
@@ -458,30 +416,9 @@ const VehicleForm = ({
                   label="Giá Bán (VNĐ)"
                   type="text"
                   value={formatNumber(formik.values.salePrice)}
-                  onInput={(e: any) => {
-                    // Lấy phần tử input
-                    const input = e.currentTarget;
-                    
-                    // Lưu vị trí con trỏ hiện tại
-                    const cursorPos = input.selectionStart;
-                    
-                    // Xóa tất cả các dấu phân cách hàng nghìn
-                    const rawValue = input.value.replace(/\./g, '');
-                    
-                    // Cập nhật giá trị
-                    const numericValue = parseInt(rawValue, 10) || 0;
-                    formik.setFieldValue('salePrice', numericValue);
-                    
-                    // Đặt lại vị trí con trỏ sau khi render (trong setTimeout)
-                    setTimeout(() => {
-                      // Tính toán vị trí con trỏ mới dựa trên số lượng dấu phân cách
-                      const formattedValue = formatNumber(numericValue);
-                      const addedSeparators = formattedValue.split('.').length - 1;
-                      const originalSeparators = input.value.substring(0, cursorPos).split('.').length - 1;
-                      const newCursorPos = cursorPos + (addedSeparators - originalSeparators);
-                      
-                      input.setSelectionRange(newCursorPos, newCursorPos);
-                    }, 0);
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    formik.setFieldValue('salePrice', parseInt(value, 10) || 0);
                   }}
                   error={formik.touched.salePrice && Boolean(formik.errors.salePrice)}
                   helperText={formik.touched.salePrice && formik.errors.salePrice}
@@ -613,7 +550,12 @@ const VehicleForm = ({
                         const input = e.currentTarget;
                         
                         // Lưu vị trí con trỏ hiện tại
-                        const cursorPos = input.selectionStart;
+                        const cursorPos = input.selectionStart || 0;
+                        
+                        // Kiểm tra giá trị để tránh lỗi undefined
+                        if (input.value === undefined || input.value === null) {
+                          return;
+                        }
                         
                         // Xóa tất cả các dấu phân cách hàng nghìn
                         const rawValue = input.value.replace(/\./g, '');
@@ -798,7 +740,12 @@ const VehicleForm = ({
                         const input = e.currentTarget;
                         
                         // Lưu vị trí con trỏ hiện tại
-                        const cursorPos = input.selectionStart;
+                        const cursorPos = input.selectionStart || 0;
+                        
+                        // Kiểm tra giá trị để tránh lỗi undefined
+                        if (input.value === undefined || input.value === null) {
+                          return;
+                        }
                         
                         // Xóa tất cả các dấu phân cách hàng nghìn
                         const rawValue = input.value.replace(/\./g, '');

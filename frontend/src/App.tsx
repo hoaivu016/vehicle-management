@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React from 'react';
+import type { ReactElement } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
+import { useState } from 'react';
 import { 
   Container, 
   Typography, 
@@ -14,7 +17,9 @@ import {
   Alert,
   Chip,
   Slide,
-  Portal
+  Portal,
+  CircularProgress,
+  TextField
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import VehicleList from './modules/vehicles/components/VehicleList';
@@ -34,13 +39,17 @@ import {
   calculateDebt,
   CostInfo
 } from './types/vehicles/vehicle';
+import type {
+  Staff as StaffType,
+  StaffHistory,
+  StaffStatistics
+} from './types/staff/staff';
 import {
-  Staff,
-  generateStaffId,
   StaffStatus,
-  calculateTotalCommission,
   StaffTeam,
-  StaffRole
+  StaffRole,
+  generateStaffId,
+  calculateTotalCommission
 } from './types/staff/staff';
 import { KpiTarget, SupportDepartmentBonus } from './models/kpi';
 import { supabase } from './lib/database/supabase';
@@ -55,9 +64,33 @@ import {
 
 // Định nghĩa interface cho các tab
 interface TabPanelProps {
-  children?: React.ReactNode;
+  children?: ReactElement;
   index: number;
   value: number;
+}
+
+// Định nghĩa interface cho thông báo
+interface SyncMessage {
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
+
+// Định nghĩa interface cho state
+interface AppState {
+  vehicleList: Vehicle[];
+  staff: StaffType[];
+  staffHistory: StaffHistory[];
+  kpiTargets: KpiTarget[];
+  supportBonus: SupportDepartmentBonus[];
+  selectedVehicle: Vehicle | null;
+  isStatusModalOpen: boolean;
+  isOnline: boolean;
+  syncStatus: 'syncing' | 'success' | 'error' | null;
+  syncMessage: string;
+  currentTab: number;
+  showSyncMessage: boolean;
+  syncMessageData: SyncMessage;
+  kpiList: KpiTarget[];
 }
 
 // Component TabPanel để hiển thị nội dung của từng tab
@@ -82,23 +115,143 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
+// Cập nhật interface Staff để thêm terminationDate
+interface Staff {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  team: StaffTeam;
+  role: StaffRole;
+  status: StaffStatus;
+  joinDate: Date;
+  terminationDate?: Date;
+  salary: number;
+  commissionRate: number;
+  vehiclesSold: number;
+  totalCommission: number;
+  note?: string;
+}
+
 function App() {
   // Thêm hỗ trợ xác định thiết bị di động
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // State kiểm tra kết nối Supabase
-  const [isOnline, setIsOnline] = useState<boolean>(false);
-  const [showSyncMessage, setShowSyncMessage] = useState<boolean>(false);
-  const [syncMessage, setSyncMessage] = useState<{message: string, type: 'success' | 'error' | 'info'}>({
-    message: '',
-    type: 'success'
+  // State chính của ứng dụng
+  const [state, setState] = useState<AppState>({
+    vehicleList: [],
+    staff: [],
+    staffHistory: [],
+    kpiTargets: [],
+    supportBonus: [],
+    selectedVehicle: null,
+    isStatusModalOpen: false,
+    isOnline: navigator.onLine,
+    syncStatus: null,
+    syncMessage: '',
+    currentTab: 0,
+    showSyncMessage: false,
+    syncMessageData: { message: '', type: 'info' },
+    kpiList: []
   });
-  
-  // Thêm cờ đánh dấu trạng thái đang đồng bộ để tránh đồng bộ nhiều lần
+
+  const {
+    vehicleList: vehicles,
+    staff,
+    staffHistory,
+    kpiTargets,
+    supportBonus,
+    selectedVehicle,
+    isStatusModalOpen,
+    isOnline,
+    syncStatus,
+    syncMessage,
+    currentTab,
+    showSyncMessage,
+    syncMessageData,
+    kpiList
+  } = state;
+
+  // State cho đồng bộ hóa
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
-  // Thêm cờ đánh dấu có dữ liệu chưa lưu khi chuyển tab
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // State cho form xe
+  const [isVehicleFormOpen, setIsVehicleFormOpen] = useState<boolean>(false);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | undefined>(undefined);
+  const [isStatusChangeModalOpen, setIsStatusChangeModalOpen] = useState<boolean>(false);
+  const [selectedVehicleForStatusChange, setSelectedVehicleForStatusChange] = useState<Vehicle | undefined>(undefined);
+
+  // State cho chọn tháng/năm
+  const initialDate = new Date();
+  const [globalMonth, setGlobalMonth] = useState<number>(initialDate.getMonth() + 1);
+  const [globalYear, setGlobalYear] = useState<number>(initialDate.getFullYear());
+
+  // Lưu danh sách xe vào localStorage mỗi khi thay đổi
+  useEffect(() => {
+    localStorage.setItem('vehicles', JSON.stringify(vehicles));
+  }, [vehicles]);
+
+  // Lưu danh sách nhân sự vào localStorage mỗi khi thay đổi
+  useEffect(() => {
+    localStorage.setItem('staff', JSON.stringify(staff));
+  }, [staff]);
+
+  // Lưu danh sách KPI vào localStorage mỗi khi thay đổi
+  useEffect(() => {
+    localStorage.setItem('kpis', JSON.stringify(kpiTargets));
+  }, [kpiTargets]);
+
+  // Thay thế bằng useEffect để khôi phục dữ liệu từ localStorage
+  useEffect(() => {
+    const savedVehicles = localStorage.getItem('vehicles');
+    if (savedVehicles) {
+      const parsedVehicles = JSON.parse(savedVehicles).map((vehicle: Vehicle) => ({
+        ...vehicle,
+        importDate: new Date(vehicle.importDate),
+        exportDate: vehicle.exportDate ? new Date(vehicle.exportDate) : null
+      }));
+      setState(prev => ({
+        ...prev,
+        vehicleList: parsedVehicles
+      }));
+    }
+  }, []);
+
+  // State cho danh sách nhân sự
+  const [staffList, setStaffList] = useState<Staff[]>(() => {
+    // Khôi phục danh sách nhân sự từ localStorage khi khởi tạo
+    const savedStaff = localStorage.getItem('staffList');
+    if (savedStaff) {
+      return JSON.parse(savedStaff).map((staff: Staff) => ({
+        ...staff,
+        joinDate: new Date(staff.joinDate),
+        terminationDate: staff.terminationDate ? new Date(staff.terminationDate) : null
+      }));
+    } else {
+      // Tạo một nhân viên mẫu nếu chưa có dữ liệu
+      const sampleStaff: Staff = {
+        id: 'NV01VU',
+        name: 'Phan Hữu Hoài Vũ',
+        phone: '0888813838',
+        email: 'vuphan@example.com',
+        address: 'Thành phố Hồ Chí Minh',
+        team: StaffTeam.SALES_1,
+        role: StaffRole.STAFF,
+        status: StaffStatus.ACTIVE,
+        joinDate: new Date('2025-02-01'),
+        salary: 5000000,
+        commissionRate: 5,
+        vehiclesSold: 0,
+        totalCommission: 0,
+        note: 'Nhân viên mẫu'
+      };
+      return [sampleStaff];
+    }
+  });
 
   // Hàm kiểm tra xung đột dữ liệu
   const checkDataConflicts = (localData: any[], serverData: any[], idField: string = 'id') => {
@@ -152,141 +305,121 @@ function App() {
     try {
       setIsSyncing(true);
       // Hiển thị thông báo đang đồng bộ
-      setSyncMessage({
-        message: 'Đang đồng bộ dữ liệu...',
-        type: 'info'
-      });
-      setShowSyncMessage(true);
+      setState(prev => ({
+        ...prev,
+        syncStatus: 'syncing',
+        syncMessage: 'Đang đồng bộ dữ liệu...'
+      }));
 
       // Lưu dữ liệu vào localStorage trước khi đồng bộ
       localStorage.setItem('vehicles_before_sync', JSON.stringify(vehicles));
-      localStorage.setItem('staff_before_sync', JSON.stringify(staffList));
+      localStorage.setItem('staff_before_sync', JSON.stringify(staff));
       
       // Đồng bộ các thay đổi đang chờ
       const syncResult = await syncPendingActions();
       
       if (syncResult) {
-        // Tải dữ liệu từ Supabase và merge với dữ liệu local
-        const [vehiclesData, staffData, kpiData, bonusData] = await Promise.all([
-          loadVehiclesFromSupabase(),
-          loadStaffFromSupabase(),
-          loadKpiFromSupabase(),
-          loadSupportBonusFromSupabase()
-        ]);
-        
-        // Kiểm tra xung đột
-        const vehicleConflicts = checkDataConflicts(vehicles, vehiclesData);
-        const staffConflicts = checkDataConflicts(staffList, staffData);
-        
-        // Giải quyết xung đột
-        const resolvedVehicles = resolveDataConflicts(vehicleConflicts);
-        const resolvedStaff = resolveDataConflicts(staffConflicts);
-        
-        // Merge dữ liệu đã giải quyết xung đột
-        const mergedVehicles = [...vehiclesData];
-        const mergedStaff = [...staffData];
-        
-        // Thay thế các mục có xung đột bằng phiên bản đã giải quyết
-        resolvedVehicles.forEach(resolvedVehicle => {
-          const index = mergedVehicles.findIndex(v => v.id === resolvedVehicle.id);
-          if (index !== -1) {
-            mergedVehicles[index] = resolvedVehicle;
-          }
-        });
-        
-        resolvedStaff.forEach(resolvedStaff => {
-          const index = mergedStaff.findIndex(s => s.id === resolvedStaff.id);
-          if (index !== -1) {
-            mergedStaff[index] = resolvedStaff;
-          }
-        });
-        
-        // Cập nhật state với dữ liệu đã được merge giữa local và server
-        setVehicles(currentVehicles => {
-          // Xử lý dates cho vehiclesData
-          const processedVehiclesData = mergedVehicles.map(vehicle => ({
-            ...vehicle,
-            importDate: vehicle.importDate instanceof Date ? vehicle.importDate : new Date(vehicle.importDate),
-            exportDate: vehicle.exportDate ? (vehicle.exportDate instanceof Date ? vehicle.exportDate : new Date(vehicle.exportDate)) : undefined
-          }));
+        try {
+          // Tải dữ liệu từ Supabase và merge với dữ liệu local
+          const [vehiclesData, staffData, kpiData, bonusData] = await Promise.all([
+            loadVehiclesFromSupabase(),
+            loadStaffFromSupabase(),
+            loadKpiFromSupabase(),
+            loadSupportBonusFromSupabase()
+          ]);
           
-          // Kiểm tra xem có dữ liệu nào thực sự thay đổi không
-          if (JSON.stringify(currentVehicles) === JSON.stringify(processedVehiclesData)) {
-            return currentVehicles; // Không thay đổi state nếu dữ liệu giống nhau
-          }
-          return processedVehiclesData;
-        });
-        
-        setStaffList(currentStaff => {
-          // Xử lý dates cho staffData
-          const processedStaffData = mergedStaff.map(staff => ({
-            ...staff,
-            joinDate: staff.joinDate instanceof Date ? staff.joinDate : new Date(staff.joinDate),
-            terminationDate: staff.terminationDate ? (staff.terminationDate instanceof Date ? staff.terminationDate : new Date(staff.terminationDate)) : undefined
-          }));
+          // Kiểm tra xung đột
+          const vehicleConflicts = checkDataConflicts(vehicles, vehiclesData);
+          const staffConflicts = checkDataConflicts(staff, staffData);
           
-          // Kiểm tra xem có dữ liệu nào thực sự thay đổi không
-          if (JSON.stringify(currentStaff) === JSON.stringify(processedStaffData)) {
-            return currentStaff; // Không thay đổi state nếu dữ liệu giống nhau
-          }
-          return processedStaffData;
-        });
-        
-        setKpiList(currentKPI => {
-          // Xử lý dates cho kpiData
-          const processedKpiData = kpiData.map(kpi => ({
-            ...kpi,
-            createdAt: kpi.createdAt instanceof Date ? kpi.createdAt : new Date(kpi.createdAt),
-            updatedAt: kpi.updatedAt instanceof Date ? kpi.updatedAt : new Date(kpi.updatedAt)
-          }));
+          // Giải quyết xung đột
+          const resolvedVehicles = resolveDataConflicts(vehicleConflicts);
+          const resolvedStaff = resolveDataConflicts(staffConflicts);
           
-          // Kiểm tra xem có dữ liệu nào thực sự thay đổi không
-          if (JSON.stringify(currentKPI) === JSON.stringify(processedKpiData)) {
-            return currentKPI; // Không thay đổi state nếu dữ liệu giống nhau
-          }
-          return processedKpiData;
-        });
-        
-        setSupportBonusList(currentBonuses => {
-          // Xử lý dates cho bonusData
-          const processedBonusData = bonusData.map(bonus => ({
-            ...bonus,
-            createdAt: bonus.createdAt instanceof Date ? bonus.createdAt : new Date(bonus.createdAt),
-            updatedAt: bonus.updatedAt instanceof Date ? bonus.updatedAt : new Date(bonus.updatedAt)
-          }));
+          // Merge dữ liệu đã giải quyết xung đột
+          const mergedVehicles = [...vehiclesData];
+          const mergedStaff = [...staffData];
           
-          // Kiểm tra xem có dữ liệu nào thực sự thay đổi không
-          if (JSON.stringify(currentBonuses) === JSON.stringify(processedBonusData)) {
-            return currentBonuses; // Không thay đổi state nếu dữ liệu giống nhau
-          }
-          return processedBonusData;
-        });
-        
-        setSyncMessage({
-          message: 'Đồng bộ dữ liệu thành công',
-          type: 'success'
-        });
-        setShowSyncMessage(true);
-        
-        // Tự động ẩn thông báo sau 3 giây
-        setTimeout(() => {
-          setShowSyncMessage(false);
-        }, 3000);
+          // Thay thế các mục có xung đột bằng phiên bản đã giải quyết
+          resolvedVehicles.forEach(resolvedVehicle => {
+            const index = mergedVehicles.findIndex(v => v.id === resolvedVehicle.id);
+            if (index !== -1) {
+              mergedVehicles[index] = resolvedVehicle;
+            }
+          });
+          
+          resolvedStaff.forEach(resolvedStaff => {
+            const index = mergedStaff.findIndex(s => s.id === resolvedStaff.id);
+            if (index !== -1) {
+              mergedStaff[index] = resolvedStaff;
+            }
+          });
+          
+          // Cập nhật state với dữ liệu đã được merge giữa local và server
+          setState(prev => ({
+            ...prev,
+            vehicleList: mergedVehicles,
+            staff: mergedStaff,
+            kpiTargets: kpiData,
+            supportBonus: bonusData,
+            syncStatus: 'success',
+            syncMessage: 'Đồng bộ dữ liệu thành công',
+            syncMessageData: {
+              message: 'Đồng bộ dữ liệu thành công',
+              type: 'success'
+            },
+            showSyncMessage: true
+          }));
+
+          // Xóa dữ liệu pending sync sau khi đồng bộ thành công
+          localStorage.removeItem('pendingSync');
+          
+          // Tự động ẩn thông báo sau 3 giây
+          setTimeout(() => {
+            setState(prev => ({
+              ...prev,
+              syncStatus: null,
+              syncMessage: '',
+              showSyncMessage: false
+            }));
+          }, 3000);
+        } catch (error) {
+          console.error('Lỗi khi tải dữ liệu từ Supabase:', error);
+          setState(prev => ({
+            ...prev,
+            syncStatus: 'error',
+            syncMessage: 'Lỗi khi tải dữ liệu từ server',
+            syncMessageData: {
+              message: 'Lỗi khi tải dữ liệu từ server',
+              type: 'error'
+            },
+            showSyncMessage: true
+          }));
+        }
       }
     } catch (error) {
       console.error('Lỗi khi đồng bộ dữ liệu:', error);
-      setSyncMessage({
-        message: 'Đồng bộ dữ liệu thất bại',
-        type: 'error'
-      });
-      setShowSyncMessage(true);
-      
-      // Tự động ẩn thông báo sau 3 giây
-      setTimeout(() => {
-        setShowSyncMessage(false);
-      }, 3000);
+      setState(prev => ({
+        ...prev,
+        syncStatus: 'error',
+        syncMessage: 'Đồng bộ dữ liệu thất bại',
+        syncMessageData: {
+          message: 'Đồng bộ dữ liệu thất bại',
+          type: 'error'
+        },
+        showSyncMessage: true
+      }));
     } finally {
       setIsSyncing(false);
+      // Tự động ẩn thông báo lỗi sau 3 giây
+      setTimeout(() => {
+        setState(prev => ({
+          ...prev,
+          syncStatus: null,
+          syncMessage: '',
+          showSyncMessage: false
+        }));
+      }, 3000);
     }
   };
 
@@ -313,7 +446,10 @@ function App() {
           return;
         }
         
-        setIsOnline(isConnected);
+        setState(prev => ({
+          ...prev,
+          isOnline: isConnected
+        }));
         
         if (isConnected) {
           // Lưu thông tin thiết bị đang đồng bộ
@@ -329,16 +465,25 @@ function App() {
           // Lưu thông tin thiết bị vào localStorage
           localStorage.setItem('lastSyncDevice', JSON.stringify(deviceInfo));
           
-          // Nếu có bảng sync_logs trong Supabase, lưu log vào đó
+          // Kiểm tra xem bảng sync_logs có tồn tại không trước khi thực hiện thao tác insert
           try {
-            await supabase.from('sync_logs').insert([{
-              device_info: deviceInfo,
-              sync_time: new Date().toISOString(),
-              is_successful: true
-            }]);
+            // Kiểm tra bảng sync_logs có tồn tại không
+            const { error: checkError } = await supabase
+              .from('sync_logs')
+              .select('count', { count: 'exact', head: true })
+              .limit(1);
+            
+            // Chỉ insert nếu không có lỗi khi kiểm tra
+            if (!checkError) {
+              await supabase.from('sync_logs').insert([{
+                device_info: deviceInfo,
+                sync_time: new Date().toISOString(),
+                is_successful: true
+              }]);
+            }
           } catch (error) {
             // Bỏ qua lỗi nếu bảng không tồn tại
-            console.log('Không thể lưu log đồng bộ, có thể bảng sync_logs chưa được tạo');
+            console.log('Không thể lưu log đồng bộ, có thể bảng sync_logs chưa được tạo', error);
           }
           
           // Chỉ đồng bộ dữ liệu nếu chuyển từ offline sang online
@@ -348,7 +493,10 @@ function App() {
       } catch (error) {
         console.error("Lỗi khi kiểm tra kết nối:", error);
         if (isMounted) {
-          setIsOnline(false);
+          setState(prev => ({
+            ...prev,
+            isOnline: false
+          }));
         }
       } finally {
         isCheckingConnection = false;
@@ -373,107 +521,6 @@ function App() {
       window.removeEventListener('online', handleOnline);
     };
   }, [isOnline, isSyncing]);
-
-  // State cho danh sách xe
-  const [vehicles, setVehicles] = useState<Vehicle[]>(() => {
-    // Khôi phục danh sách xe từ localStorage khi khởi tạo
-    const savedVehicles = localStorage.getItem('vehicles');
-    return savedVehicles 
-      ? JSON.parse(savedVehicles).map((vehicle: Vehicle) => ({
-          ...vehicle,
-          importDate: new Date(vehicle.importDate),
-          exportDate: vehicle.exportDate ? new Date(vehicle.exportDate) : undefined
-        }))
-      : [];
-  });
-
-  // State toàn cục cho việc chọn tháng/năm
-  const currentDate = new Date();
-  const [globalMonth, setGlobalMonth] = useState(currentDate.getMonth() + 1);
-  const [globalYear, setGlobalYear] = useState(currentDate.getFullYear());
-
-  // State cho danh sách nhân sự
-  const [staffList, setStaffList] = useState<Staff[]>(() => {
-    // Khôi phục danh sách nhân sự từ localStorage khi khởi tạo
-    const savedStaff = localStorage.getItem('staffList');
-    if (savedStaff) {
-      return JSON.parse(savedStaff).map((staff: Staff) => ({
-        ...staff,
-        joinDate: new Date(staff.joinDate),
-        terminationDate: staff.terminationDate ? new Date(staff.terminationDate) : undefined
-      }));
-    } else {
-      // Tạo một nhân viên mẫu nếu chưa có dữ liệu
-      const sampleStaff: Staff = {
-        id: 'NV01VU',
-        name: 'Phan Hữu Hoài Vũ',
-        phone: '0888813838',
-        email: 'vuphan@example.com',
-        address: 'Thành phố Hồ Chí Minh',
-        team: StaffTeam.SALES_1,
-        role: StaffRole.STAFF,
-        status: StaffStatus.ACTIVE,
-        joinDate: new Date('2025-02-01'),
-        salary: 5000000,
-        commissionRate: 5,
-        vehiclesSold: 0,
-        totalCommission: 0,
-        note: 'Nhân viên mẫu'
-      };
-      return [sampleStaff];
-    }
-  });
-
-  // State cho form xe
-  const [isVehicleFormOpen, setIsVehicleFormOpen] = useState(false);
-  const [editingVehicle, setEditingVehicle] = useState<Partial<Vehicle> | undefined>(undefined);
-  const [isStatusChangeModalOpen, setIsStatusChangeModalOpen] = useState(false);
-  const [selectedVehicleForStatusChange, setSelectedVehicleForStatusChange] = useState<Vehicle | undefined>(undefined);
-  
-  // State để quản lý tab hiện tại
-  const [currentTab, setCurrentTab] = useState(0);
-
-  // State cho KPI và thưởng
-  const [kpiList, setKpiList] = useState<KpiTarget[]>(() => {
-    // Khôi phục danh sách KPI từ localStorage khi khởi tạo
-    const savedKpis = localStorage.getItem('kpis');
-    return savedKpis ? JSON.parse(savedKpis).map((kpi: KpiTarget) => ({
-      ...kpi,
-      createdAt: new Date(kpi.createdAt),
-      updatedAt: new Date(kpi.updatedAt)
-    })) : [];
-  });
-
-  // State cho thưởng phòng hỗ trợ
-  const [supportBonusList, setSupportBonusList] = useState<SupportDepartmentBonus[]>(() => {
-    // Khôi phục danh sách thưởng từ localStorage khi khởi tạo
-    const savedBonuses = localStorage.getItem('supportBonuses');
-    return savedBonuses ? JSON.parse(savedBonuses).map((bonus: SupportDepartmentBonus) => ({
-      ...bonus,
-      createdAt: new Date(bonus.createdAt),
-      updatedAt: new Date(bonus.updatedAt)
-    })) : [];
-  });
-
-  // Lưu danh sách xe vào localStorage mỗi khi thay đổi
-  useEffect(() => {
-    localStorage.setItem('vehicles', JSON.stringify(vehicles));
-  }, [vehicles]);
-
-  // Lưu danh sách nhân sự vào localStorage mỗi khi thay đổi
-  useEffect(() => {
-    localStorage.setItem('staffList', JSON.stringify(staffList));
-  }, [staffList]);
-
-  // Lưu danh sách KPI vào localStorage mỗi khi thay đổi
-  useEffect(() => {
-    localStorage.setItem('kpis', JSON.stringify(kpiList));
-  }, [kpiList]);
-
-  // Lưu danh sách thưởng phòng hỗ trợ vào localStorage mỗi khi thay đổi
-  useEffect(() => {
-    localStorage.setItem('supportBonuses', JSON.stringify(supportBonusList));
-  }, [supportBonusList]);
 
   // Hàm cập nhật tính toán cho xe
   const updateVehicleCalculations = (vehicle: Vehicle): Vehicle => {
@@ -527,7 +574,10 @@ function App() {
     // Nếu có sự thay đổi, cập nhật state và localStorage
     if (JSON.stringify(recalculatedVehicles) !== JSON.stringify(vehicles)) {
       console.log('Đã tính toán lại dữ liệu của tất cả xe');
-      setVehicles(recalculatedVehicles);
+      setState(prev => ({
+        ...prev,
+        vehicleList: recalculatedVehicles
+      }));
       localStorage.setItem('vehicles', JSON.stringify(recalculatedVehicles));
     }
   }, [vehicles]);
@@ -545,126 +595,249 @@ function App() {
   }, [recalculateAllVehicles]);
 
   // Xử lý thêm xe
-  const handleAddVehicle = (vehicleData: Partial<Vehicle>) => {
-    setHasUnsavedChanges(false); // Reset cờ khi đã lưu
-    
-    // Tạo một đối tượng xe mới với các giá trị mặc định
-    const newVehicle: Vehicle = {
-      ...vehicleData as Vehicle,
-      id: vehicleData.id || generateVehicleId(vehicles),
-      status: vehicleData.status || VehicleStatus.IN_STOCK,
-      cost: vehicleData.cost || 0,
-      costs: vehicleData.costs || [],
-      debt: vehicleData.debt || 0,
-      profit: vehicleData.profit || 0,
-      payments: vehicleData.payments || [],
-      storageTime: 0,
-      importDate: vehicleData.importDate || new Date(),
-      statusHistory: [{
-        fromStatus: VehicleStatus.IN_STOCK,
-        toStatus: VehicleStatus.IN_STOCK,
-        changedAt: new Date(),
-        changedBy: 'System',
-        notes: 'Nhập kho'
-      }]
-    };
+  const handleAddVehicle = async (vehicleData: Partial<Vehicle>) => {
+    try {
+      // Kiểm tra dữ liệu đầu vào
+      if (!vehicleData.name?.trim()) {
+        throw new Error('Tên xe là bắt buộc');
+      }
+      if (!vehicleData.color?.trim()) {
+        throw new Error('Màu sắc xe là bắt buộc');
+      }
+      if (!vehicleData.manufacturingYear || vehicleData.manufacturingYear > new Date().getFullYear()) {
+        throw new Error('Năm sản xuất không hợp lệ');
+      }
+      if (vehicleData.odo < 0) {
+        throw new Error('Số km không được âm');
+      }
+      if (vehicleData.purchasePrice <= 0) {
+        throw new Error('Giá mua phải lớn hơn 0');
+      }
+      if (vehicleData.salePrice <= vehicleData.purchasePrice) {
+        throw new Error('Giá bán phải lớn hơn giá mua');
+      }
 
-    // Cập nhật các giá trị tính toán
-    const calculatedVehicle = updateVehicleCalculations(newVehicle);
+      setHasUnsavedChanges(false);
+      
+      // Tạo ID mới cho xe
+      const newId = generateVehicleId(vehicles);
+      
+      // Khởi tạo đối tượng xe mới với các giá trị mặc định
+      const newVehicle: Vehicle = {
+        id: newId,
+        name: vehicleData.name.trim(),
+        color: vehicleData.color.trim(),
+        manufacturingYear: vehicleData.manufacturingYear,
+        odo: vehicleData.odo || 0,
+        purchasePrice: vehicleData.purchasePrice,
+        salePrice: vehicleData.salePrice,
+        importDate: vehicleData.importDate || new Date(),
+        exportDate: vehicleData.exportDate,
+        note: vehicleData.note?.trim() || '',
+        status: VehicleStatus.IN_STOCK,
+        cost: 0,
+        costs: [],
+        debt: 0,
+        profit: 0,
+        payments: [],
+        storageTime: 0,
+        saleStaff: vehicleData.saleStaff || {
+          id: '',
+          name: '',
+          team: '',
+          expectedCommission: 0
+        },
+        statusHistory: [{
+          fromStatus: VehicleStatus.IN_STOCK,
+          toStatus: VehicleStatus.IN_STOCK,
+          changedAt: new Date(),
+          changedBy: 'System',
+          notes: 'Nhập kho'
+        }],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
 
-    const updatedVehicles = [...vehicles, calculatedVehicle];
-    setVehicles(updatedVehicles);
-    localStorage.setItem('vehicles', JSON.stringify(updatedVehicles));
-    
-    // Thêm vào hàng đợi đồng bộ nếu không có kết nối
-    if (isOnline) {
-      synchronizeData();
-    } else {
-      savePendingSync({ type: 'vehicle_add', data: calculatedVehicle });
+      // Cập nhật các giá trị tính toán
+      const calculatedVehicle = updateVehicleCalculations(newVehicle);
+
+      // Thêm xe mới vào state và localStorage trước
+      const updatedVehicles = [...vehicles, calculatedVehicle];
+      setState(prev => ({
+        ...prev,
+        vehicleList: updatedVehicles
+      }));
+      localStorage.setItem('vehicles', JSON.stringify(updatedVehicles));
+
+      if (isOnline) {
+        try {
+          // Thêm vào Supabase nếu online
+          const { error } = await supabase
+            .from('vehicles')
+            .insert([calculatedVehicle]);
+
+          if (error) {
+            console.error('Lỗi Supabase:', error);
+            // Lưu vào pending sync nếu có lỗi khi thêm vào Supabase
+            savePendingSync({ type: 'vehicle_add', data: calculatedVehicle });
+            throw new Error(`Lỗi khi lưu dữ liệu: ${error.message}`);
+          }
+        } catch (supabaseError) {
+          console.error('Lỗi khi thêm xe vào Supabase:', supabaseError);
+          // Lưu vào pending sync
+          savePendingSync({ type: 'vehicle_add', data: calculatedVehicle });
+          setState(prev => ({
+            ...prev,
+            syncMessageData: {
+              message: 'Đã lưu xe mới nhưng chưa đồng bộ được với server',
+              type: 'warning'
+            },
+            showSyncMessage: true
+          }));
+        }
+      } else {
+        // Lưu vào pending sync nếu offline
+        savePendingSync({ type: 'vehicle_add', data: calculatedVehicle });
+      }
+
+      // Hiển thị thông báo thành công
+      setState(prev => ({
+        ...prev,
+        syncMessageData: {
+          message: 'Thêm xe mới thành công',
+          type: 'success'
+        },
+        showSyncMessage: true
+      }));
+
+      // Tự động ẩn thông báo sau 3 giây
+      setTimeout(() => {
+        setState(prev => ({
+          ...prev,
+          showSyncMessage: false
+        }));
+      }, 3000);
+
+      // Đóng form
+      setIsVehicleFormOpen(false);
+
+    } catch (error) {
+      console.error('Lỗi khi thêm xe:', error);
+      setState(prev => ({
+        ...prev,
+        syncMessageData: {
+          message: error instanceof Error ? error.message : 'Lỗi khi thêm xe mới',
+          type: 'error'
+        },
+        showSyncMessage: true
+      }));
+
+      setTimeout(() => {
+        setState(prev => ({
+          ...prev,
+          showSyncMessage: false
+        }));
+      }, 3000);
     }
   };
 
   // Xử lý chỉnh sửa xe
-  const handleEditVehicle = (vehicleData: Partial<Vehicle>) => {
-    setHasUnsavedChanges(false); // Reset cờ khi đã lưu
-    
-    const updatedVehicles = vehicles.map(vehicle => {
-      if (vehicle.id === vehicleData.id) {
-        // Tạo xe đã cập nhật
-        const updatedVehicle = { ...vehicle, ...vehicleData };
-        // Cập nhật các giá trị tính toán
-        return updateVehicleCalculations(updatedVehicle as Vehicle);
+  const handleEditVehicle = async (vehicleData: Partial<Vehicle>) => {
+    try {
+      setHasUnsavedChanges(false);
+      
+      // Tìm xe cần cập nhật
+      const existingVehicle = vehicles.find(v => v.id === vehicleData.id);
+      if (!existingVehicle) {
+        throw new Error('Không tìm thấy xe cần cập nhật');
       }
-      return vehicle;
-    });
-    
-    setVehicles(updatedVehicles);
-    localStorage.setItem('vehicles', JSON.stringify(updatedVehicles));
-    
-    // Thêm vào hàng đợi đồng bộ
-    const updatedVehicle = updatedVehicles.find(v => v.id === vehicleData.id);
-    if (updatedVehicle) {
+
+      // Tạo đối tượng xe đã cập nhật
+      const updatedVehicle = updateVehicleCalculations({
+        ...existingVehicle,
+        ...vehicleData
+      } as Vehicle);
+
       if (isOnline) {
-        synchronizeData();
+        // Cập nhật trong Supabase
+        const { error } = await supabase
+          .from('vehicles')
+          .update(updatedVehicle)
+          .eq('id', updatedVehicle.id);
+
+        if (error) throw error;
       } else {
+        // Cập nhật trong localStorage và pending sync
+        const updatedVehicles = vehicles.map(v => 
+          v.id === updatedVehicle.id ? updatedVehicle : v
+        );
+        setState(prev => ({
+          ...prev,
+          vehicleList: updatedVehicles
+        }));
+        localStorage.setItem('vehicles', JSON.stringify(updatedVehicles));
         savePendingSync({ type: 'vehicle_update', data: updatedVehicle });
       }
-    }
-  };
 
-  // Xử lý xóa xe
-  const handleDeleteVehicle = (vehicleId: string) => {
-    console.log('handleDeleteVehicle được gọi với ID:', vehicleId);
-    
-    // Kiểm tra tồn tại của xe trước khi xóa
-    const vehicleToDelete = vehicles.find(vehicle => vehicle.id === vehicleId);
-    if (!vehicleToDelete) {
-      console.error(`Không tìm thấy xe với ID: ${vehicleId}`);
-      // Hiển thị thông báo lỗi
-      setSyncMessage({
-        message: `Không tìm thấy xe với ID: ${vehicleId}`,
-        type: 'error'
-      });
-      setShowSyncMessage(true);
-      setTimeout(() => setShowSyncMessage(false), 3000);
-      return;
-    }
-
-    try {
-      console.log('Thông tin xe sẽ bị xóa:', JSON.stringify(vehicleToDelete));
-      
-      // Lọc ra danh sách xe không bao gồm xe cần xóa
-      const updatedVehicles = vehicles.filter(vehicle => vehicle.id !== vehicleId);
-      console.log(`Số lượng xe trước khi xóa: ${vehicles.length}, sau khi xóa: ${updatedVehicles.length}`);
-      
-      // Cập nhật state
-      setVehicles(updatedVehicles);
-      
-      // Cập nhật localStorage
-      localStorage.setItem('vehicles', JSON.stringify(updatedVehicles));
-      console.log('Đã lưu danh sách xe mới vào localStorage');
-      
       // Hiển thị thông báo thành công
-      setSyncMessage({
-        message: `Đã xóa xe ${vehicleToDelete.name} (${vehicleToDelete.color}) thành công!`,
+      setSyncMessageData({
+        message: 'Cập nhật xe thành công',
         type: 'success'
       });
       setShowSyncMessage(true);
       setTimeout(() => setShowSyncMessage(false), 3000);
-      
-      // Thêm vào hàng đợi đồng bộ
+
+    } catch (error) {
+      console.error('Lỗi khi cập nhật xe:', error);
+      setSyncMessageData({
+        message: 'Lỗi khi cập nhật xe',
+        type: 'error'
+      });
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
+    }
+  };
+
+  // Xử lý xóa xe
+  const handleDeleteVehicle = async (vehicleId: string) => {
+    try {
+      // Kiểm tra tồn tại của xe
+      const vehicleToDelete = vehicles.find(v => v.id === vehicleId);
+      if (!vehicleToDelete) {
+        throw new Error('Không tìm thấy xe cần xóa');
+      }
+
       if (isOnline) {
-        synchronizeData();
+        // Xóa từ Supabase
+        const { error } = await supabase
+          .from('vehicles')
+          .delete()
+          .eq('id', vehicleId);
+
+        if (error) throw error;
       } else {
+        // Xóa từ localStorage và thêm vào pending sync
+        const updatedVehicles = vehicles.filter(v => v.id !== vehicleId);
+        setState(prev => ({
+          ...prev,
+          vehicleList: updatedVehicles
+        }));
+        localStorage.setItem('vehicles', JSON.stringify(updatedVehicles));
         savePendingSync({ type: 'vehicle_delete', data: { id: vehicleId } });
       }
-      
-      console.log('Xóa xe hoàn tất');
+
+      // Hiển thị thông báo thành công
+      setSyncMessageData({
+        message: `Đã xóa xe ${vehicleToDelete.name} thành công`,
+        type: 'success'
+      });
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
+
     } catch (error) {
-      console.error("Lỗi khi xóa xe:", error);
-      // Hiển thị thông báo lỗi
-      setSyncMessage({
-        message: `Lỗi khi xóa xe: ${error instanceof Error ? error.message : 'Không xác định'}`,
+      console.error('Lỗi khi xóa xe:', error);
+      setSyncMessageData({
+        message: 'Lỗi khi xóa xe',
         type: 'error'
       });
       setShowSyncMessage(true);
@@ -694,11 +867,12 @@ function App() {
     const calculatedVehicle = updateVehicleCalculations(updatedVehicle);
     
     // Cập nhật trạng thái xe
-    setVehicles(prevVehicles => 
-      prevVehicles.map(vehicle => 
+    setState(prev => ({
+      ...prev,
+      vehicleList: vehicles.map(vehicle => 
         vehicle.id === calculatedVehicle.id ? calculatedVehicle : vehicle
       )
-    );
+    }));
     
     // Lưu dữ liệu vào localStorage
     localStorage.setItem('vehicles', JSON.stringify(
@@ -770,9 +944,10 @@ function App() {
       const calculatedVehicle = updateVehicleCalculations(updatedVehicle as Vehicle);
 
       // Cập nhật danh sách xe
-      setVehicles(prevVehicles =>
-        prevVehicles.map(v => v.id === vehicleId ? calculatedVehicle : v)
-      );
+      setState(prev => ({
+        ...prev,
+        vehicleList: vehicles.map(v => v.id === vehicleId ? calculatedVehicle : v)
+      }));
 
       // Lưu dữ liệu vào localStorage
       localStorage.setItem('vehicles', JSON.stringify(
@@ -815,57 +990,143 @@ function App() {
   };
 
   // Xử lý thêm nhân viên mới
-  const handleAddStaff = (staffData: Partial<Staff>) => {
-    const newStaff: Staff = {
-      ...staffData as Staff,
-      id: generateStaffId(staffList, staffData.name || ''),
-      status: StaffStatus.ACTIVE,
-      vehiclesSold: 0,
-      totalCommission: 0
-    };
+  const handleAddStaff = async (staffData: Partial<Staff>) => {
+    try {
+      const newStaff: Staff = {
+        ...staffData as Staff,
+        id: generateStaffId(staffList, staffData.name || ''),
+        status: StaffStatus.ACTIVE,
+        vehiclesSold: 0,
+        totalCommission: 0
+      };
 
-    const updatedStaffList = [...staffList, newStaff];
-    setStaffList(updatedStaffList);
-    localStorage.setItem('staffList', JSON.stringify(updatedStaffList));
-    
-    // Thêm vào hàng đợi đồng bộ
-    if (isOnline) {
-      synchronizeData();
-    } else {
-      savePendingSync({ type: 'staff_add', data: newStaff });
+      if (isOnline) {
+        // Thêm vào Supabase
+        const { error } = await supabase
+          .from('staff')
+          .insert([newStaff]);
+
+        if (error) throw error;
+      } else {
+        // Thêm vào localStorage và pending sync
+        const updatedStaffList = [...staffList, newStaff];
+        setStaffList(updatedStaffList);
+        localStorage.setItem('staffList', JSON.stringify(updatedStaffList));
+        savePendingSync({ type: 'staff_add', data: newStaff });
+      }
+
+      // Hiển thị thông báo thành công
+      setSyncMessageData({
+        message: 'Thêm nhân viên mới thành công',
+        type: 'success'
+      });
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
+
+    } catch (error) {
+      console.error('Lỗi khi thêm nhân viên:', error);
+      setSyncMessageData({
+        message: 'Lỗi khi thêm nhân viên mới',
+        type: 'error'
+      });
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
     }
   };
 
   // Xử lý chỉnh sửa nhân viên
-  const handleEditStaff = (staffData: Partial<Staff>) => {
-    const updatedStaffList = staffList.map(staff => 
-      staff.id === staffData.id ? { ...staff, ...staffData } : staff
-    );
-    setStaffList(updatedStaffList);
-    localStorage.setItem('staffList', JSON.stringify(updatedStaffList));
-    
-    // Thêm vào hàng đợi đồng bộ
-    const updatedStaff = updatedStaffList.find(s => s.id === staffData.id);
-    if (updatedStaff) {
+  const handleEditStaff = async (staffData: Partial<Staff>) => {
+    try {
+      // Tìm nhân viên cần cập nhật
+      const existingStaff = staffList.find(s => s.id === staffData.id);
+      if (!existingStaff) {
+        throw new Error('Không tìm thấy nhân viên cần cập nhật');
+      }
+
+      // Tạo đối tượng nhân viên đã cập nhật
+      const updatedStaff = {
+        ...existingStaff,
+        ...staffData
+      };
+
       if (isOnline) {
-        synchronizeData();
+        // Cập nhật trong Supabase
+        const { error } = await supabase
+          .from('staff')
+          .update(updatedStaff)
+          .eq('id', updatedStaff.id);
+
+        if (error) throw error;
       } else {
+        // Cập nhật trong localStorage và pending sync
+        const updatedStaffList = staffList.map(s => 
+          s.id === updatedStaff.id ? updatedStaff : s
+        );
+        setStaffList(updatedStaffList);
+        localStorage.setItem('staffList', JSON.stringify(updatedStaffList));
         savePendingSync({ type: 'staff_update', data: updatedStaff });
       }
+
+      // Hiển thị thông báo thành công
+      setSyncMessageData({
+        message: 'Cập nhật nhân viên thành công',
+        type: 'success'
+      });
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
+
+    } catch (error) {
+      console.error('Lỗi khi cập nhật nhân viên:', error);
+      setSyncMessageData({
+        message: 'Lỗi khi cập nhật nhân viên',
+        type: 'error'
+      });
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
     }
   };
 
   // Xử lý xóa nhân viên
-  const handleDeleteStaff = (staffId: string) => {
-    const updatedStaffList = staffList.filter(staff => staff.id !== staffId);
-    setStaffList(updatedStaffList);
-    localStorage.setItem('staffList', JSON.stringify(updatedStaffList));
-    
-    // Thêm vào hàng đợi đồng bộ
-    if (isOnline) {
-      synchronizeData();
-    } else {
-      savePendingSync({ type: 'staff_delete', data: { id: staffId } });
+  const handleDeleteStaff = async (staffId: string) => {
+    try {
+      // Kiểm tra tồn tại của nhân viên
+      const staffToDelete = staffList.find(s => s.id === staffId);
+      if (!staffToDelete) {
+        throw new Error('Không tìm thấy nhân viên cần xóa');
+      }
+
+      if (isOnline) {
+        // Xóa từ Supabase
+        const { error } = await supabase
+          .from('staff')
+          .delete()
+          .eq('id', staffId);
+
+        if (error) throw error;
+      } else {
+        // Xóa từ localStorage và thêm vào pending sync
+        const updatedStaffList = staffList.filter(s => s.id !== staffId);
+        setStaffList(updatedStaffList);
+        localStorage.setItem('staffList', JSON.stringify(updatedStaffList));
+        savePendingSync({ type: 'staff_delete', data: { id: staffId } });
+      }
+
+      // Hiển thị thông báo thành công
+      setSyncMessageData({
+        message: `Đã xóa nhân viên ${staffToDelete.name} thành công`,
+        type: 'success'
+      });
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
+
+    } catch (error) {
+      console.error('Lỗi khi xóa nhân viên:', error);
+      setSyncMessageData({
+        message: 'Lỗi khi xóa nhân viên',
+        type: 'error'
+      });
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
     }
   };
 
@@ -892,28 +1153,74 @@ function App() {
   };
 
   // Xử lý lưu KPI
-  const handleSaveKpi = (kpiTargets: KpiTarget[]) => {
-    setKpiList(kpiTargets);
-    localStorage.setItem('kpis', JSON.stringify(kpiTargets));
-    
-    // Thêm vào hàng đợi đồng bộ
-    if (isOnline) {
-      synchronizeData();
-    } else {
-      savePendingSync({ type: 'kpi_update', data: kpiTargets });
+  const handleSaveKpi = async (kpiTargets: KpiTarget[]) => {
+    try {
+      if (isOnline) {
+        // Cập nhật trong Supabase
+        const { error } = await supabase
+          .from('kpi_targets')
+          .upsert(kpiTargets);
+
+        if (error) throw error;
+      } else {
+        // Cập nhật trong localStorage và pending sync
+        setKpiList(kpiTargets);
+        localStorage.setItem('kpis', JSON.stringify(kpiTargets));
+        savePendingSync({ type: 'kpi_update', data: kpiTargets });
+      }
+
+      // Hiển thị thông báo thành công
+      setSyncMessageData({
+        message: 'Cập nhật KPI thành công',
+        type: 'success'
+      });
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
+
+    } catch (error) {
+      console.error('Lỗi khi cập nhật KPI:', error);
+      setSyncMessageData({
+        message: 'Lỗi khi cập nhật KPI',
+        type: 'error'
+      });
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
     }
   };
 
   // Xử lý lưu thưởng phòng hỗ trợ
-  const handleSaveSupportBonus = (bonuses: SupportDepartmentBonus[]) => {
-    setSupportBonusList(bonuses);
-    localStorage.setItem('supportBonuses', JSON.stringify(bonuses));
-    
-    // Thêm vào hàng đợi đồng bộ
-    if (isOnline) {
-      synchronizeData();
-    } else {
-      savePendingSync({ type: 'bonus_update', data: bonuses });
+  const handleSaveSupportBonus = async (bonuses: SupportDepartmentBonus[]) => {
+    try {
+      if (isOnline) {
+        // Cập nhật trong Supabase
+        const { error } = await supabase
+          .from('support_bonuses')
+          .upsert(bonuses);
+
+        if (error) throw error;
+      } else {
+        // Cập nhật trong localStorage và pending sync
+        setSupportBonus(bonuses);
+        localStorage.setItem('supportBonuses', JSON.stringify(bonuses));
+        savePendingSync({ type: 'bonus_update', data: bonuses });
+      }
+
+      // Hiển thị thông báo thành công
+      setSyncMessageData({
+        message: 'Cập nhật thưởng phòng hỗ trợ thành công',
+        type: 'success'
+      });
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
+
+    } catch (error) {
+      console.error('Lỗi khi cập nhật thưởng phòng hỗ trợ:', error);
+      setSyncMessageData({
+        message: 'Lỗi khi cập nhật thưởng phòng hỗ trợ',
+        type: 'error'
+      });
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
     }
   };
 
@@ -938,15 +1245,25 @@ function App() {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
     
-    // Lọc xe theo tháng hiện tại
+    // Lọc xe theo tháng và năm
     const vehiclesThisMonth = vehicles.filter(vehicle => {
-      const vehicleDate = vehicle.status === VehicleStatus.SOLD
+      const rawDate = vehicle.status === VehicleStatus.SOLD
         ? vehicle.exportDate
         : vehicle.importDate;
         
-      return vehicleDate && 
-        vehicleDate.getMonth() === currentMonth &&
-        vehicleDate.getFullYear() === currentYear;
+      if (!rawDate) return false;
+      
+      const vehicleDate = rawDate instanceof Date 
+        ? rawDate 
+        : new Date(rawDate);
+      
+      if (isNaN(vehicleDate.getTime())) {
+        console.warn('Ngày không hợp lệ:', rawDate);
+        return false;
+      }
+      
+      return vehicleDate.getMonth() === currentMonth &&
+             vehicleDate.getFullYear() === currentYear;
     });
     
     // Cập nhật số liệu thống kê
@@ -974,24 +1291,10 @@ function App() {
     };
   }, [vehicles]);
   
-  // Lấy danh sách xe đang trong kho với useMemo
-  const inStockVehicles = useMemo(() => {
-    return vehicles.filter(vehicle => vehicle.status === VehicleStatus.IN_STOCK);
-  }, [vehicles]);
-  
-  // Lấy danh sách xe đã đặt cọc với useMemo
-  const depositedVehicles = useMemo(() => {
-    return vehicles.filter(vehicle => 
-      vehicle.status === VehicleStatus.DEPOSITED || 
-      vehicle.status === VehicleStatus.BANK_DEPOSITED || 
-      vehicle.status === VehicleStatus.OFFSET
-    );
-  }, [vehicles]);
-  
-  // Lấy danh sách xe đã bán với useMemo
-  const soldVehicles = useMemo(() => {
-    return vehicles.filter(vehicle => vehicle.status === VehicleStatus.SOLD);
-  }, [vehicles]);
+  // Lọc xe theo trạng thái
+  const inStockVehicles = vehicles.filter(v => v.status === VehicleStatus.IN_STOCK);
+  const depositedVehicles = vehicles.filter(v => v.status === VehicleStatus.DEPOSITED);
+  const soldVehicles = vehicles.filter(v => v.status === VehicleStatus.SOLD);
   
   // Lấy danh sách nhân viên đang hoạt động với useMemo
   const activeStaff = useMemo(() => {
@@ -1024,6 +1327,222 @@ function App() {
     setCurrentTab(2);
   };
 
+  // Thêm useEffect cho real-time subscription
+  useEffect(() => {
+    let mounted = true;
+    
+    // Hàm khởi tạo subscription
+    const setupSubscriptions = async () => {
+      if (!isOnline) return;
+
+      // Subscription cho vehicles
+      const vehiclesSubscription = supabase
+        .channel('vehicles-changes')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'vehicles' 
+        }, (payload) => {
+          if (!mounted) return;
+          
+          if (payload.eventType === 'INSERT') {
+            setState(prev => ({
+              ...prev,
+              vehicleList: [...prev.vehicleList, payload.new as Vehicle]
+            }));
+          } else if (payload.eventType === 'UPDATE') {
+            setState(prev => ({
+              ...prev,
+              vehicleList: prev.vehicleList.map(v => 
+                v.id === payload.new.id ? payload.new as Vehicle : v
+              )
+            }));
+          } else if (payload.eventType === 'DELETE') {
+            setState(prev => ({
+              ...prev,
+              vehicleList: prev.vehicleList.filter(v => v.id !== payload.old.id)
+            }));
+          }
+        })
+        .subscribe();
+
+      // Subscription cho staff
+      const staffSubscription = supabase
+        .channel('staff-changes')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'staff' 
+        }, (payload) => {
+          if (!mounted) return;
+          
+          if (payload.eventType === 'INSERT') {
+            setStaffList(prev => [...prev, payload.new as Staff]);
+          } else if (payload.eventType === 'UPDATE') {
+            setStaffList(prev => prev.map(s => 
+              s.id === payload.new.id ? payload.new as Staff : s
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setStaffList(prev => prev.filter(s => s.id !== payload.old.id));
+          }
+        })
+        .subscribe();
+
+      // Subscription cho KPI
+      const kpiSubscription = supabase
+        .channel('kpi-changes')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'kpi_targets' 
+        }, (payload) => {
+          if (!mounted) return;
+          setKpiList(prev => {
+            if (payload.eventType === 'INSERT') {
+              return [...prev, payload.new as KpiTarget];
+            } else if (payload.eventType === 'UPDATE') {
+              return prev.map(k => k.id === payload.new.id ? payload.new as KpiTarget : k);
+            } else if (payload.eventType === 'DELETE') {
+              return prev.filter(k => k.id !== payload.old.id);
+            }
+            return prev;
+          });
+        })
+        .subscribe();
+
+      return () => {
+        vehiclesSubscription.unsubscribe();
+        staffSubscription.unsubscribe();
+        kpiSubscription.unsubscribe();
+        mounted = false;
+      };
+    };
+
+    setupSubscriptions();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isOnline]);
+
+  // Cập nhật useEffect cho việc load dữ liệu ban đầu
+  useEffect(() => {
+    let mounted = true;
+    
+    const loadInitialData = async () => {
+      try {
+        setIsLoading(true);
+        
+        const [vehiclesData, staffData, kpiData, bonusData] = await Promise.all([
+          loadVehiclesFromSupabase(),
+          loadStaffFromSupabase(),
+          loadKpiFromSupabase(),
+          loadSupportBonusFromSupabase()
+        ]);
+
+        if (!mounted) return;
+
+        // Chuyển đổi ngày tháng cho dữ liệu xe
+        const processedVehicles = vehiclesData.map((v: Vehicle) => ({
+          ...v,
+          importDate: new Date(v.importDate),
+          exportDate: v.exportDate ? new Date(v.exportDate) : null
+        }));
+
+        // Chuyển đổi ngày tháng cho dữ liệu nhân viên
+        const processedStaff = staffData.map((s: Staff) => ({
+          ...s,
+          joinDate: new Date(s.joinDate),
+          terminationDate: s.terminationDate ? new Date(s.terminationDate) : null
+        }));
+
+        setState(prev => ({
+          ...prev,
+          vehicleList: processedVehicles,
+          staff: processedStaff,
+          kpiTargets: kpiData,
+          supportBonus: bonusData
+        }));
+
+        // Lưu vào localStorage
+        localStorage.setItem('vehicles', JSON.stringify(processedVehicles));
+        localStorage.setItem('staffList', JSON.stringify(processedStaff));
+        localStorage.setItem('kpis', JSON.stringify(kpiData));
+        localStorage.setItem('supportBonuses', JSON.stringify(bonusData));
+        
+      } catch (error) {
+        console.error('Lỗi khi tải dữ liệu ban đầu:', error);
+        loadFromLocalStorage();
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadInitialData();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Thêm hàm loadFromLocalStorage
+  const loadFromLocalStorage = () => {
+    const savedVehicles = localStorage.getItem('vehicles');
+    const savedStaff = localStorage.getItem('staffList');
+    const savedKpis = localStorage.getItem('kpis');
+    const savedBonuses = localStorage.getItem('supportBonuses');
+
+    if (savedVehicles) {
+      setState(prev => ({
+        ...prev,
+        vehicleList: JSON.parse(savedVehicles).map((v: Vehicle) => ({
+          ...v,
+          importDate: new Date(v.importDate),
+          exportDate: v.exportDate ? new Date(v.exportDate) : null
+        }))
+      }));
+    }
+
+    if (savedStaff) {
+      setStaffList(JSON.parse(savedStaff).map((s: Staff) => ({
+        ...s,
+        joinDate: new Date(s.joinDate),
+        terminationDate: s.terminationDate ? new Date(s.terminationDate) : null
+      })));
+    }
+
+    if (savedKpis) {
+      setKpiList(JSON.parse(savedKpis));
+    }
+
+    if (savedBonuses) {
+      setSupportBonus(JSON.parse(savedBonuses));
+    }
+  };
+
+  // Thêm các hàm setter
+  const setShowSyncMessage = (value: boolean) => {
+    setState(prev => ({ ...prev, showSyncMessage: value }));
+  };
+
+  const setSyncMessageData = (data: SyncMessage) => {
+    setState(prev => ({ ...prev, syncMessageData: data }));
+  };
+
+  const setCurrentTab = (value: number) => {
+    setState(prev => ({ ...prev, currentTab: value }));
+  };
+
+  const setKpiList = (value: KpiTarget[]) => {
+    setState(prev => ({ ...prev, kpiList: value }));
+  };
+
+  const setSupportBonus = (value: SupportDepartmentBonus[]) => {
+    setState(prev => ({ ...prev, supportBonus: value }));
+  };
+
   return (
     <Box sx={{ 
       display: 'flex', 
@@ -1032,117 +1551,130 @@ function App() {
       overflow: 'hidden'
     }}>
       <Container maxWidth={false} disableGutters sx={{ px: 2, pb: isMobile ? 7 : 2 }}>
-        <Box sx={{ my: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h3" component="h1" gutterBottom align="left" sx={{ 
-              mb: 0,
-              fontSize: isMobile ? '1.75rem' : '2.5rem'
-            }}>
-              Quản Lý Kho Xe
-            </Typography>
-            {isOnline ? (
-              <Chip 
-                label={isSyncing ? 'Đang đồng bộ...' : 'Đã kết nối'} 
-                color={isSyncing ? 'warning' : 'success'} 
-                size="small" 
-                onClick={synchronizeData}
-                sx={{ cursor: 'pointer' }}
-              />
-            ) : (
-              <Chip 
-                label="Offline" 
-                color="error" 
-                size="small" 
-              />
-            )}
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <CircularProgress />
           </Box>
-
-          {!isMobile && (
-            <Paper sx={{ borderRadius: 1, boxShadow: 1, mb: 4 }}>
-              <AppBar position="static" color="default" elevation={0} sx={{ borderTopLeftRadius: 1, borderTopRightRadius: 1 }}>
-                <Tabs 
-                  value={currentTab} 
-                  onChange={handleTabChange}
-                  indicatorColor="primary"
-                  textColor="primary"
-                  variant="fullWidth"
-                >
-                  <Tab label="Báo Cáo" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }} />
-                  <Tab label="Danh Sách Xe" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }} />
-                  <Tab label="ADMIN" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }} />
-                </Tabs>
-              </AppBar>
-            </Paper>
-          )}
-
-          {/* Hiển thị tab báo cáo */}
-          <TabPanel value={currentTab} index={0}>
-            <Report 
-              vehicles={vehicles} 
-              selectedMonth={globalMonth}
-              selectedYear={globalYear}
-              onDateChange={handleGlobalDateChange}
-              staffList={staffList}
-              kpiList={kpiList}
-            />
-          </TabPanel>
-
-          {/* Hiển thị tab danh sách xe */}
-          <TabPanel value={currentTab} index={1}>
-            <VehicleList 
-              vehicles={vehicles} 
-              onEdit={handleOpenEditVehicleForm}
-              onDelete={handleDeleteVehicle}
-              onStatusChange={handleStatusChange}
-              onAddCost={handleAddCost}
-              onAddVehicle={handleOpenAddVehicleForm}
-              selectedMonth={globalMonth}
-              selectedYear={globalYear}
-              onDateChange={handleGlobalDateChange}
-            />
-            {isVehicleFormOpen && (
-              <VehicleForm 
-                open={isVehicleFormOpen}
-                onClose={() => {
-                  setIsVehicleFormOpen(false);
-                  setEditingVehicle(undefined);
-                  setHasUnsavedChanges(false);
-                }}
-                onSubmit={editingVehicle ? handleEditVehicle : handleAddVehicle}
-                initialData={editingVehicle}
-                staffList={staffList}
-                onFormChange={(hasChanges) => setHasUnsavedChanges(hasChanges)}
-              />
+        ) : (
+          <>
+            {!isOnline && (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                Bạn đang offline. Các thay đổi sẽ được đồng bộ khi có kết nối.
+              </Alert>
             )}
-            {isStatusChangeModalOpen && selectedVehicleForStatusChange && (
-              <StatusChangeModal 
-                open={isStatusChangeModalOpen}
-                vehicle={selectedVehicleForStatusChange}
-                onClose={() => setIsStatusChangeModalOpen(false)}
-                onStatusChange={handleStatusChangeConfirm}
-                staffList={staffList}
-              />
-            )}
-          </TabPanel>
+            <Box sx={{ my: 4 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h3" component="h1" gutterBottom align="left" sx={{ 
+                  mb: 0,
+                  fontSize: isMobile ? '1.75rem' : '2.5rem'
+                }}>
+                  Quản Lý Kho Xe
+                </Typography>
+                {isOnline ? (
+                  <Chip 
+                    label={isSyncing ? 'Đang đồng bộ...' : 'Đã kết nối'} 
+                    color={isSyncing ? 'warning' : 'success'} 
+                    size="small" 
+                    onClick={synchronizeData}
+                    sx={{ cursor: 'pointer' }}
+                  />
+                ) : (
+                  <Chip 
+                    label="Offline" 
+                    color="error" 
+                    size="small" 
+                  />
+                )}
+              </Box>
 
-          {/* Hiển thị tab ADMIN */}
-          <TabPanel value={currentTab} index={2}>
-            <Admin 
-              staffList={staffList}
-              vehicles={vehicles}
-              onAddStaff={handleAddStaff}
-              onEditStaff={handleEditStaff}
-              onDeleteStaff={handleDeleteStaff}
-              kpiList={kpiList}
-              onSaveKpi={handleSaveKpi}
-              supportBonusList={supportBonusList}
-              onSaveSupportBonus={handleSaveSupportBonus}
-              selectedMonth={globalMonth}
-              selectedYear={globalYear}
-              onDateChange={handleGlobalDateChange}
-            />
-          </TabPanel>
-        </Box>
+              {!isMobile && (
+                <Paper sx={{ borderRadius: 1, boxShadow: 1, mb: 4 }}>
+                  <AppBar position="static" color="default" elevation={0} sx={{ borderTopLeftRadius: 1, borderTopRightRadius: 1 }}>
+                    <Tabs 
+                      value={currentTab} 
+                      onChange={handleTabChange}
+                      indicatorColor="primary"
+                      textColor="primary"
+                      variant="fullWidth"
+                    >
+                      <Tab label="Báo Cáo" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }} />
+                      <Tab label="Danh Sách Xe" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }} />
+                      <Tab label="ADMIN" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }} />
+                    </Tabs>
+                  </AppBar>
+                </Paper>
+              )}
+
+              {/* Hiển thị tab báo cáo */}
+              <TabPanel value={currentTab} index={0}>
+                <Report 
+                  vehicles={vehicles} 
+                  selectedMonth={globalMonth}
+                  selectedYear={globalYear}
+                  onDateChange={handleGlobalDateChange}
+                  staffList={staffList}
+                  kpiList={kpiList}
+                />
+              </TabPanel>
+
+              {/* Hiển thị tab danh sách xe */}
+              <TabPanel value={currentTab} index={1}>
+                <VehicleList 
+                  vehicles={vehicles} 
+                  onEdit={handleOpenEditVehicleForm}
+                  onDelete={handleDeleteVehicle}
+                  onStatusChange={handleStatusChange}
+                  onAddCost={handleAddCost}
+                  onAddVehicle={handleOpenAddVehicleForm}
+                  selectedMonth={globalMonth}
+                  selectedYear={globalYear}
+                  onDateChange={handleGlobalDateChange}
+                />
+                {isVehicleFormOpen && (
+                  <VehicleForm 
+                    open={isVehicleFormOpen}
+                    onClose={() => {
+                      setIsVehicleFormOpen(false);
+                      setEditingVehicle(undefined);
+                      setHasUnsavedChanges(false);
+                    }}
+                    onSubmit={editingVehicle ? handleEditVehicle : handleAddVehicle}
+                    initialData={editingVehicle}
+                    staffList={staffList}
+                    onFormChange={(hasChanges) => setHasUnsavedChanges(hasChanges)}
+                  />
+                )}
+                {isStatusChangeModalOpen && selectedVehicleForStatusChange && (
+                  <StatusChangeModal 
+                    open={isStatusChangeModalOpen}
+                    vehicle={selectedVehicleForStatusChange}
+                    onClose={() => setIsStatusChangeModalOpen(false)}
+                    onStatusChange={handleStatusChangeConfirm}
+                    staffList={staffList}
+                  />
+                )}
+              </TabPanel>
+
+              {/* Hiển thị tab ADMIN */}
+              <TabPanel value={currentTab} index={2}>
+                <Admin 
+                  staffList={staffList}
+                  vehicles={vehicles}
+                  onAddStaff={handleAddStaff}
+                  onEditStaff={handleEditStaff}
+                  onDeleteStaff={handleDeleteStaff}
+                  kpiList={kpiList}
+                  onSaveKpi={handleSaveKpi}
+                  supportBonusList={supportBonus}
+                  onSaveSupportBonus={handleSaveSupportBonus}
+                  selectedMonth={globalMonth}
+                  selectedYear={globalYear}
+                  onDateChange={handleGlobalDateChange}
+                />
+              </TabPanel>
+            </Box>
+          </>
+        )}
       </Container>
       
       {/* Bottom Navigation cho thiết bị di động */}
@@ -1223,11 +1755,11 @@ function App() {
           >
             <Alert 
               onClose={() => setShowSyncMessage(false)} 
-              severity={syncMessage.type}
+              severity={syncMessageData.type}
               variant="filled"
               sx={{ width: '100%' }}
             >
-              {syncMessage.message}
+              {syncMessageData.message}
             </Alert>
           </Box>
         </Slide>

@@ -13,7 +13,11 @@ import {
   Card,
   CardContent,
   Divider,
-  useMediaQuery
+  useMediaQuery,
+  FormControl,
+  TextField,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { formatCurrency, formatDate } from '../../../../utils/formatters';
@@ -27,11 +31,12 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import EqualizerIcon from '@mui/icons-material/Equalizer';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import BarChartIcon from '@mui/icons-material/BarChart';
-import MonthYearPicker from '../../../../components/MonthYearPicker';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 // TabPanel interface và component
 interface TabPanelProps {
-  children?: React.ReactNode;
+  children?: any;
   index: number;
   value: number;
 }
@@ -912,19 +917,113 @@ const Report: React.FC<ReportProps> = ({
       <Box>
         {/* Header với lựa chọn tháng */}
         <Paper sx={{ p: 2, mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+            {/* Tiêu đề báo cáo */}
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <CalendarMonthIcon sx={{ mr: 1 }} />
               <Typography variant="h6" component="h2">
                 Báo cáo {monthYearString}
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <MonthYearPicker
-                selectedMonth={selectedMonth}
-                selectedYear={selectedYear}
-                onChange={handleDateChange}
-              />
+            
+            {/* Nút chọn thời gian */}
+            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'center' }}>
+              <Tooltip title="Tháng trước">
+                <IconButton onClick={() => {
+                  let newMonth = selectedMonth - 1;
+                  let newYear = selectedYear;
+                  
+                  if (newMonth < 1) {
+                    newMonth = 12;
+                    newYear -= 1;
+                  }
+                  
+                  handleDateChange(newMonth, newYear);
+                }} size="small">
+                  <ChevronLeftIcon />
+                </IconButton>
+              </Tooltip>
+              
+              <FormControl sx={{ width: 180, mx: 1 }}>
+                <TextField
+                  value={monthYearString}
+                  onChange={(event) => {
+                    setMonthYearString(event.target.value);
+                    
+                    try {
+                      // Dự kiến format: "Tháng M/YYYY"
+                      const matches = event.target.value.match(/Tháng\s+(\d{1,2})\/(\d{4})/);
+                      if (matches && matches.length === 3) {
+                        const month = parseInt(matches[1], 10);
+                        const year = parseInt(matches[2], 10);
+                        
+                        if (month >= 1 && month <= 12 && year >= 2000) {
+                          // Không cho phép chọn tháng trong tương lai
+                          const currentDate = new Date();
+                          if (year > currentDate.getFullYear() || 
+                              (year === currentDate.getFullYear() && month > currentDate.getMonth() + 1)) {
+                            return;
+                          }
+                          
+                          handleDateChange(month, year);
+                        }
+                      }
+                    } catch (error) {
+                      console.error("Lỗi khi phân tích chuỗi tháng/năm:", error);
+                    }
+                  }}
+                  variant="outlined"
+                  size="small"
+                  InputProps={{
+                    endAdornment: (
+                      <IconButton
+                        onClick={() => {
+                          const currentDate = new Date();
+                          const currentMonth = currentDate.getMonth() + 1;
+                          const currentYear = currentDate.getFullYear();
+                          handleDateChange(currentMonth, currentYear);
+                        }}
+                        size="small"
+                        title="Về tháng hiện tại"
+                      >
+                        <CalendarMonthIcon fontSize="small" />
+                      </IconButton>
+                    )
+                  }}
+                />
+              </FormControl>
+              
+              <Tooltip title="Tháng sau">
+                <span>
+                  <IconButton 
+                    onClick={() => {
+                      let newMonth = selectedMonth + 1;
+                      let newYear = selectedYear;
+                      
+                      if (newMonth > 12) {
+                        newMonth = 1;
+                        newYear += 1;
+                      }
+                      
+                      // Không cho phép chọn tháng trong tương lai
+                      const currentDate = new Date();
+                      if (newYear > currentDate.getFullYear() || 
+                          (newYear === currentDate.getFullYear() && newMonth > currentDate.getMonth() + 1)) {
+                        return;
+                      }
+                      
+                      handleDateChange(newMonth, newYear);
+                    }}
+                    size="small"
+                    disabled={
+                      selectedYear > new Date().getFullYear() || 
+                      (selectedYear === new Date().getFullYear() && selectedMonth >= new Date().getMonth() + 1)
+                    }
+                  >
+                    <ChevronRightIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
             </Box>
           </Box>
         </Paper>
@@ -954,11 +1053,102 @@ const Report: React.FC<ReportProps> = ({
         </Typography>
             </Box>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <MonthYearPicker
-                selectedMonth={selectedMonth}
-                selectedYear={selectedYear}
-                onChange={handleDateChange}
-              />
+              <Tooltip title="Tháng trước">
+                <IconButton onClick={() => {
+                  let newMonth = selectedMonth - 1;
+                  let newYear = selectedYear;
+                  
+                  if (newMonth < 1) {
+                    newMonth = 12;
+                    newYear -= 1;
+                  }
+                  
+                  handleDateChange(newMonth, newYear);
+                }} size="small">
+                  <ChevronLeftIcon />
+                </IconButton>
+              </Tooltip>
+              
+              <FormControl sx={{ width: 180, mx: 1 }}>
+                <TextField
+                  value={monthYearString}
+                  onChange={(event) => {
+                    setMonthYearString(event.target.value);
+                    
+                    try {
+                      // Dự kiến format: "Tháng M/YYYY"
+                      const matches = event.target.value.match(/Tháng\s+(\d{1,2})\/(\d{4})/);
+                      if (matches && matches.length === 3) {
+                        const month = parseInt(matches[1], 10);
+                        const year = parseInt(matches[2], 10);
+                        
+                        if (month >= 1 && month <= 12 && year >= 2000) {
+                          // Không cho phép chọn tháng trong tương lai
+                          const currentDate = new Date();
+                          if (year > currentDate.getFullYear() || 
+                              (year === currentDate.getFullYear() && month > currentDate.getMonth() + 1)) {
+                            return;
+                          }
+                          
+                          handleDateChange(month, year);
+                        }
+                      }
+                    } catch (error) {
+                      console.error("Lỗi khi phân tích chuỗi tháng/năm:", error);
+                    }
+                  }}
+                  variant="outlined"
+                  size="small"
+                  InputProps={{
+                    endAdornment: (
+                      <IconButton
+                        onClick={() => {
+                          const currentDate = new Date();
+                          const currentMonth = currentDate.getMonth() + 1;
+                          const currentYear = currentDate.getFullYear();
+                          handleDateChange(currentMonth, currentYear);
+                        }}
+                        size="small"
+                        title="Về tháng hiện tại"
+                      >
+                        <CalendarMonthIcon fontSize="small" />
+                      </IconButton>
+                    )
+                  }}
+                />
+              </FormControl>
+              
+              <Tooltip title="Tháng sau">
+                <span>
+                  <IconButton 
+                    onClick={() => {
+                      let newMonth = selectedMonth + 1;
+                      let newYear = selectedYear;
+                      
+                      if (newMonth > 12) {
+                        newMonth = 1;
+                        newYear += 1;
+                      }
+                      
+                      // Không cho phép chọn tháng trong tương lai
+                      const currentDate = new Date();
+                      if (newYear > currentDate.getFullYear() || 
+                          (newYear === currentDate.getFullYear() && newMonth > currentDate.getMonth() + 1)) {
+                        return;
+                      }
+                      
+                      handleDateChange(newMonth, newYear);
+                    }}
+                    size="small"
+                    disabled={
+                      selectedYear > new Date().getFullYear() || 
+                      (selectedYear === new Date().getFullYear() && selectedMonth >= new Date().getMonth() + 1)
+                    }
+                  >
+                    <ChevronRightIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
             </Box>
           </Box>
         </Paper>
