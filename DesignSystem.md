@@ -4,14 +4,14 @@
 ### 1. Hệ thống màu sắc
 
 #### Màu chính
-- **Primary:** #0F4C81
-  - Hover: #0D3D68
-  - Active: #0A2F51
-  - Light: rgba(15, 76, 129, 0.1)
-- **Secondary:** #4CA
+- **Primary:** rgb(60, 133, 62) 
+  - Hover: #2d8630
+  - Active: #236b26
+  - Light: rgba(60, 133, 62, 0.1)
+- **Secondary:** #4CCAAA
   - Hover: #3A9988
   - Active: #2E8876
-  - Light: rgba(76, 204, 170, 0.1)
+  - Light: rgba(76, 202, 170, 0.1)
 
 #### Màu nền
 - **Background:** #FFFFFF (Nền chính)
@@ -55,21 +55,21 @@
 #### Màu viền
 - **Border-color:** #DEE2E6
 - **Border-color-dark:** #CED4DA
-- **Border-focus:** #80BDFF
+- **Border-focus:** rgba(60, 133, 62, 0.25)
 
 #### CSS Variables
 ```css
 :root {
   /* Colors */
-  --primary-color: #0F4C81;
-  --primary-hover: #0D3D68;
-  --primary-active: #0A2F51;
-  --primary-light: rgba(15, 76, 129, 0.1);
+  --primary-color: rgb(60, 133, 62);
+  --primary-hover: #2d8630;
+  --primary-active: #236b26;
+  --primary-light: rgba(60, 133, 62, 0.1);
   
-  --secondary-color: #4CA;
+  --secondary-color: #4CCAAA;
   --secondary-hover: #3A9988;
   --secondary-active: #2E8876;
-  --secondary-light: rgba(76, 204, 170, 0.1);
+  --secondary-light: rgba(76, 202, 170, 0.1);
   
   --background: #FFFFFF;
   --background-alt: #F8F9FA;
@@ -77,6 +77,7 @@
   --text-color: #212529;
   --text-muted: #6C757D;
   --text-light: #ADB5BD;
+  --text-white: #FFFFFF;
   
   --success-color: #28A745;
   --success-light: rgba(40, 167, 69, 0.1);
@@ -89,7 +90,7 @@
   
   --border-color: #DEE2E6;
   --border-color-dark: #CED4DA;
-  --border-focus: #80BDFF;
+  --border-focus: rgba(60, 133, 62, 0.25);
   
   /* Spacing */
   --spacing-xs: 4px;
@@ -109,7 +110,7 @@
   --shadow: 0 2px 6px rgba(0,0,0,0.08);
   --shadow-lg: 0 4px 12px rgba(0,0,0,0.12);
   --shadow-inner: inset 0 2px 4px rgba(0,0,0,0.05);
-  --shadow-focus: 0 0 0 3px rgba(15, 76, 129, 0.15);
+  --shadow-focus: 0 0 0 3px rgba(60, 133, 62, 0.15);
   
   /* Transitions */
   --transition: all 0.2s ease;
@@ -125,8 +126,8 @@
 ### 2. Typography
 
 #### Font Family
-- **Hệ thống font:** `'Mulish', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif`
-- **Monospace:** `'Mulish', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace` (cho dữ liệu kỹ thuật)
+- **Hệ thống font:** `'Mulish', system-ui, sans-serif`
+- **Monospace:** `'Mulish', monospace` (cho dữ liệu kỹ thuật)
 
 #### Cỡ chữ
 - **Heading 1:** 32px (2rem)
@@ -149,12 +150,18 @@
 - **Normal:** 1.5
 - **Loose:** 1.75
 
+#### Letter Spacing
+- **Tight:** -0.025em (Tiêu đề lớn)
+- **Normal:** 0
+- **Wide:** 0.025em (Text nhỏ, UPPERCASE)
+- **Wider:** 0.05em (UPPERCASE trong header)
+
 #### CSS Variables
 ```css
 :root {
   /* Typography */
-  --font-family: 'Mulish', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  --font-mono: 'Mulish', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-family: 'Mulish', system-ui, sans-serif;
+  --font-mono: 'Mulish', monospace;
   
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
@@ -172,6 +179,11 @@
   --line-height-tight: 1.25;
   --line-height-normal: 1.5;
   --line-height-loose: 1.75;
+  
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.025em;
+  --letter-spacing-wider: 0.05em;
 }
 ```
 
@@ -193,6 +205,13 @@
 - **Gutter:** 24px
 - **Margin:** 16px
 - **Container padding:** 16px
+- **Card padding:** 24px (Tất cả các card phải có padding 24px)
+
+#### Quy tắc spacing
+- **Nhất quán**: Luôn sử dụng giá trị từ hệ thống spacing
+- **Rhythm**: Giữ khoảng cách giữa các thành phần đồng nhất
+- **Breathing room**: Tránh các phần tử quá gần nhau
+- **Grouping**: Các phần tử liên quan có khoảng cách gần hơn
 
 ### 4. Thành phần UI
 
@@ -302,15 +321,6 @@
   - Padding: 12px 24px
   - Font-size: var(--font-size-md)
 
-##### Button Group
-- **Display:** inline-flex
-- **Border-radius:** var(--radius-sm)
-- **Overflow:** hidden
-- **Button border-radius:** 0
-- **Button border-right:** none (except last)
-- **Button margin:** 0
-- **Active button:** z-index: 1
-
 #### Forms
 
 ##### Input Field
@@ -321,7 +331,7 @@
 - **Height:** 40px
 - **Padding:** 10px 12px
 - **Font-size:** var(--font-size-sm)
-- **Focus:** Border 1px solid var(--border-focus), Box-shadow: var(--shadow-focus)
+- **Focus:** Border 1px solid var(--primary-color), Box-shadow: var(--shadow-focus)
 - **Placeholder:** var(--text-light)
 - **Disabled:** var(--background-alt) background, var(--text-muted) text, cursor: not-allowed
 - **Transition:** var(--transition)
@@ -352,28 +362,6 @@
 - **Transition:** var(--transition)
 - **Hover:** border-color: var(--primary-color)
 - **Label gap:** 8px
-
-##### Toggle Switch
-- **Track:**
-  - Width: 44px
-  - Height: 24px
-  - Background: var(--border-color-dark)
-  - Border-radius: 12px
-  - Transition: var(--transition)
-- **Thumb:**
-  - Width: 20px
-  - Height: 20px
-  - Background: white
-  - Border-radius: 50%
-  - Box-shadow: var(--shadow-sm)
-  - Transform: translateX(2px)
-  - Transition: var(--transition)
-- **Checked:**
-  - Track: Background: var(--primary-color)
-  - Thumb: Transform: translateX(22px)
-- **Focus:** box-shadow: var(--shadow-focus)
-- **Disabled:** opacity: 0.6, cursor: not-allowed
-- **Hover:** opacity: 0.9
 
 ##### Form Group
 - **Margin-bottom:** 16px
@@ -416,13 +404,14 @@
 - **Box-shadow:** var(--shadow-sm)
 - **Background:** var(--background)
 - **Overflow-x:** auto
+- **Margin-bottom:** var(--spacing-lg)
 
 ##### Table Header
 - **Background:** var(--background-alt)
 - **Color:** var(--primary-color)
 - **Font-weight:** var(--font-weight-semibold)
 - **Text-transform:** uppercase
-- **Letter-spacing:** 0.5px
+- **Letter-spacing:** var(--letter-spacing-wide)
 - **Font-size:** var(--font-size-sm)
 - **Padding:** 14px 16px
 - **Border-bottom:** 1px solid var(--border-color)
@@ -459,39 +448,9 @@
 ##### Storage Time Styling
 - **Font-weight:** var(--font-weight-semibold)
 - **Font-variant-numeric:** tabular-nums
-- **Low:** var(--secondary-color)
+- **Low:** var(--success-color)
 - **Medium:** var(--warning-color)
 - **High:** var(--danger-color)
-
-#### Responsive Tables
-- **Horizontal Scrolling:** 
-  - Container có overflow-x: auto
-  - Scrollbar styling tối giản
-  - Chiều rộng tối thiểu cho mỗi cột
-- **Card View:** 
-  - Chuyển đổi từ dạng bảng sang dạng card trên thiết bị di động (< 768px)
-  - Mỗi card hiển thị đầy đủ thông tin của một dòng trong bảng
-  - Card có border-radius: var(--radius), box-shadow: var(--shadow-sm)
-  - Padding: 16px
-  - Border: 1px solid var(--border-color)
-- **Column Prioritization:** 
-  - Cột ưu tiên hiển thị trên thiết bị di động: Mã xe, Tên xe, Trạng thái, Thao tác
-  - Cột thứ cấp (chỉ hiển thị trên tablet trở lên): ODO, Năm sản xuất, Ngày nhập
-  - Cột chỉ hiển thị trên desktop: Chi tiết tài chính, Thời gian lưu kho
-
-#### Data Table Features
-- **Sorting:** 
-  - Header có icon sắp xếp (mũi tên lên/xuống) 
-  - Trạng thái sort: unsorted, ascending, descending
-- **Filtering:** 
-  - Bộ lọc nhanh theo trạng thái xe (dropdown hoặc toggle buttons)
-- **Pagination:** 
-  - Hiển thị 10-20 xe mỗi trang
-  - Controls: Previous, Next, và số trang
-  - Hiển thị tổng số trang và vị trí hiện tại
-- **Fixed Headers:** 
-  - Header cố định khi cuộn dọc
-  - z-index: 10 để luôn hiển thị trên cùng
 
 #### Status Badge
 - **Display:** inline-flex
@@ -534,6 +493,9 @@
 - **Border-radius:** var(--radius)
 - **Box-shadow:** var(--shadow-sm)
 - **Padding:** 24px
+- **Margin-bottom:** var(--spacing-lg)
+- **Transition:** box-shadow 0.2s ease, transform 0.2s ease
+- **Hover:** box-shadow: var(--shadow)
 
 ##### Card Header
 - **Border-bottom:** 1px solid var(--border-color)
@@ -593,24 +555,16 @@
 #### Tab Navigation
 - **Tab chính:** 
   - BÁO CÁO, DANH SÁCH XE, ADMIN
-  - Background: var(--primary-color)
-  - Text: var(--text-white)
-  - Font-weight: var(--font-weight-semibold)
-  - Padding: 12px 16px
-  - Border-radius: var(--radius-sm) var(--radius-sm) 0 0
-- **Tab con trong ADMIN:** 
-  - TỔNG QUAN, KPI & THƯỞNG, QUẢN LÝ NHÂN VIÊN
-  - Background: var(--background-alt)
+  - Background: transparent
   - Text: var(--text-color)
   - Font-weight: var(--font-weight-medium)
-  - Padding: 8px 12px
-  - Border-radius: var(--radius-sm) var(--radius-sm) 0 0
+  - Padding: 12px 16px
+  - Border-bottom: 3px solid transparent
 - **Tab active:** 
-  - Tabs chính: Border-bottom: 3px solid var(--text-white), Font-weight: var(--font-weight-bold)
-  - Tabs con: Border-bottom: 3px solid var(--primary-color), Font-weight: var(--font-weight-semibold), Background: var(--background)
+  - Tabs chính: Border-bottom: 3px solid var(--primary-color), Font-weight: var(--font-weight-bold), Color: var(--primary-color)
 - **Tab hover:** 
-  - Tabs chính: Brightness tăng 10%
-  - Tabs con: var(--background-alt) background (nếu chưa active)
+  - Tabs chính: Border-bottom: 3px solid var(--border-color)
+  - Opacity: 0.9
 - **Tab disabled:**
   - Opacity: 0.5
   - Cursor: not-allowed
@@ -698,74 +652,73 @@
 - **z-index:** 999
 - **Animation:** Fade in (0.2s ease)
 
-#### Tab Navigation in Modals
-- **Container:** Padding: 0 24px 16px, border-bottom: 1px solid var(--border-color)
-- **Tabs:** Horizontal list, gap: 24px
-- **Tab style:** Padding: 12px 0, Position: relative, font-weight: var(--font-weight-medium)
-- **Active tab:** Color: var(--primary-color), Font-weight: var(--font-weight-semibold), Border-bottom: 2px solid var(--primary-color)
-- **Hover tab:** Color: var(--primary-hover), Border-bottom: 2px solid var(--border-color)
-- **Transition:** var(--transition)
+### 7. Quy tắc thiết kế tối giản chuyên nghiệp
 
-#### Popup Animation
-- **Open:**
-  - Transform: scale(0.95) → scale(1)
-  - Opacity: 0 → 1
-  - Timing: 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)
-- **Close:**
-  - Transform: scale(1) → scale(0.95)
-  - Opacity: 1 → 0
-  - Timing: 0.2s ease-out
+#### Nguyên tắc "Less is More"
+- **Tập trung vào nội dung**: Nội dung phải là trọng tâm, UI chỉ là phương tiện
+- **Loại bỏ thừa thãi**: Mọi phần tử phải có mục đích, loại bỏ các yếu tố trang trí không cần thiết
+- **Không gian trống**: Sử dụng không gian trống (white space) để tạo nhịp điệu và làm nổi bật nội dung
+- **Đơn giản hóa**: Ưu tiên các giải pháp đơn giản nhất có thể
 
-#### Popup Sizes
-- **Small:**
-  - Max-width: 400px
-- **Medium (Default):**
-  - Max-width: 600px
-- **Large:**
-  - Max-width: 800px
-- **Full:**
-  - Max-width: 90vw
-  - Height: 90vh
+#### Tính nhất quán
+- **Design tokens**: Sử dụng nhất quán các design tokens trong toàn bộ ứng dụng
+- **Thành phần UI**: Các thành phần UI giống nhau phải có cùng style
+- **Hành vi**: Các thành phần tương tự phải có cùng hành vi
+- **Spacing**: Áp dụng nhất quán hệ thống spacing
 
-### 7. Form Patterns
+#### Tính chuyên nghiệp
+- **Chi tiết**: Chú ý đến từng chi tiết nhỏ
+- **Hiệu ứng tinh tế**: Các hiệu ứng phải tinh tế, không quá mức
+- **Trau chuốt**: Mỗi phần tử đều được trau chuốt kỹ lưởng
+- **Rõ ràng**: Thông tin phải được trình bày rõ ràng, dễ hiểu
 
-#### Inline Validation
-- **Error:**
-  - Text color: var(--danger-color)
-  - Icon: Warning/error icon
-  - Position: Below input field
-  - Animation: Fade in 
-- **Success:**
-  - Icon: Checkmark in var(--success-color)
-  - Position: Right side of input field
-  - Animation: Fade in + slight bounce
-- **Timing:**
-  - On blur: Validate after field loses focus
-  - On submit: Validate all fields
-  - On input: Validate after typing stops (for complex validations)
+#### Visual Hierarchy
+- **Thứ bậc thông tin**: Thông tin quan trọng phải nổi bật
+- **Nhóm liên quan**: Các thông tin liên quan phải được nhóm lại với nhau
+- **Điểm nhấn**: Sử dụng kích thước, màu sắc, font weight để tạo điểm nhấn
+- **Đường dẫn đọc**: Thiết kế phải tạo đường dẫn đọc rõ ràng
 
-#### Smart Defaults
-- **Ngày nhập:** Ngày hiện tại
-- **Trạng thái:** "Trong kho"
-- **Năm sản xuất:** Năm hiện tại
+### 8. Checklist đảm bảo phong cách tối giản chuyên nghiệp
 
-### 8. Responsive Breakpoints
+#### Layout và tổ chức
+- [ ] Các thành phần được sắp xếp có trật tự, logic
+- [ ] Spacing được áp dụng nhất quán
+- [ ] Có đủ không gian trống (breathing room)
+- [ ] Thông tin được nhóm theo logic rõ ràng
 
-- **Smartphone:** < 576px
-- **Tablet:** 576px - 991px
-- **Desktop:** >= 992px
+#### Visual Design
+- [ ] Tất cả card, bảng đều có border và shadow theo quy định
+- [ ] Typography đúng với quy định (font, size, weight)
+- [ ] Màu sắc sử dụng đúng với design tokens
+- [ ] Border-radius được áp dụng nhất quán
 
-### 9. Quy tắc áp dụng
+#### Tính nhất quán
+- [ ] Các thành phần UI giống nhau có style giống nhau
+- [ ] Các biểu tượng có kích thước và style nhất quán
+- [ ] Spacing trong và giữa các thành phần nhất quán
+- [ ] Tỷ lệ các thành phần hài hòa
 
-1. **Nhất quán:** Tuân thủ hệ thống thiết kế trên toàn bộ ứng dụng
-2. **Đơn giản:** Ưu tiên sự đơn giản, dễ hiểu
-3. **Rõ ràng:** Mọi thành phần UI đều phải có mục đích rõ ràng
-4. **Hợp lý:** Sử dụng màu sắc, kích thước phù hợp với ngữ cảnh
-5. **Khả năng tiếp cận:** Đảm bảo độ tương phản màu sắc đạt chuẩn WCAG 2.1
-6. **Hiệu quả:** Thiết kế phải phục vụ mục đích quản lý kho xe hiệu quả
-7. **Chuyên nghiệp:** Phản ánh tính chuyên nghiệp của ngành ô tô
-8. **Tối giản:** Loại bỏ các yếu tố thừa, tập trung vào nội dung và chức năng
-9. **Dễ bảo trì:** Sử dụng CSS variables để dễ dàng cập nhật và bảo trì
+#### Tính chuyên nghiệp
+- [ ] Không có lỗi giao diện (UI bugs)
+- [ ] Các hiệu ứng mượt mà, không gây phiền nhiễu
+- [ ] Tỷ lệ và căn chỉnh chính xác
+- [ ] Trình bày rõ ràng, không gây nhầm lẫn
+
+### 9. Các pattern cần tránh
+
+#### Sai lầm phổ biến
+- ❌ **Quá nhiều màu sắc**: Hạn chế bảng màu, chỉ sử dụng màu có chủ đích
+- ❌ **Thiếu nhất quán**: Các thành phần giống nhau phải có style giống nhau
+- ❌ **Thiếu không gian trống**: Nội dung quá dày đặc, không có khoảng thở
+- ❌ **Không dùng shadow và border**: Khiến giao diện thiếu chiều sâu, khó phân biệt các thành phần
+- ❌ **Hiệu ứng quá mức**: Hiệu ứng phải tinh tế, phục vụ mục đích cụ thể
+
+#### Thay thế bằng
+- ✅ **Bảng màu hạn chế**: Tập trung vào màu primary, secondary, và các màu trạng thái
+- ✅ **Hệ thống thiết kế nhất quán**: Áp dụng nghiêm ngặt các design tokens
+- ✅ **Không gian hợp lý**: Áp dụng margin và padding theo hệ thống spacing
+- ✅ **Sử dụng shadow và border**: Tạo chiều sâu và phân tách các thành phần
+- ✅ **Hiệu ứng tinh tế**: Chỉ dùng hiệu ứng khi cần thiết và giữ chúng tinh tế
 
 ### 10. Responsive Behavior
 
